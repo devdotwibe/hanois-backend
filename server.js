@@ -19,7 +19,7 @@ app.get("/", (req, res) => {
   res.send("Hello from Hanois Backend!");
 });
 
-app.use('/users', userRoutes);
+app.use('/api/users', userRoutes);
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
