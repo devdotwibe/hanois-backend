@@ -6,7 +6,13 @@ const port = process.env.PORT || 5000;
 
 const userRoutes = require('./routes/userRoutes');
 
-app.use(cors());
+const cors = require('cors');
+app.use(cors({
+  origin: '*', // allow all origins for now (you can tighten this later)
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type'],
+}));
+
 app.use(express.json());
 
 app.get("/", (req, res) => {
