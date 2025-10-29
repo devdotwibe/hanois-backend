@@ -36,12 +36,10 @@ app.get('/', (req, res) => {
   res.send('Hello from Hanois Backend!');
 });
 
-app.get('/api/users/register', async (req, res) => {
+app.post('/api/users/register', async (req, res) => {
   try {
 
-      res.status(201).json({
-      message: 'User registered successfully',
-    });
+
 
 
 
