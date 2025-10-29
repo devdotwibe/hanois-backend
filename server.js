@@ -41,7 +41,6 @@ app.get('/api/users/register', async (req, res) => {
 
       res.status(201).json({
       message: 'User registered successfully',
-      user: result.rows[0],
     });
 
 
