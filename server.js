@@ -36,7 +36,7 @@ app.get('/', (req, res) => {
   res.send('Hello from Hanois Backend!');
 });
 
-app.post('/api/users/register', async (req, res) => {
+app.get('/api/users/register', async (req, res) => {
   try {
 
       res.status(201).json({
@@ -45,7 +45,7 @@ app.post('/api/users/register', async (req, res) => {
     });
 
 
-    
+
     const { firstName, lastName, email, number, password } = req.body;
     if (!firstName || !lastName || !email || !number || !password) {
       return res.status(400).json({ error: 'Please fill all required fields' });
