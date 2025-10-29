@@ -38,6 +38,14 @@ app.get('/', (req, res) => {
 
 app.post('/api/users/register', async (req, res) => {
   try {
+
+      res.status(201).json({
+      message: 'User registered successfully',
+      user: result.rows[0],
+    });
+
+
+    
     const { firstName, lastName, email, number, password } = req.body;
     if (!firstName || !lastName || !email || !number || !password) {
       return res.status(400).json({ error: 'Please fill all required fields' });
