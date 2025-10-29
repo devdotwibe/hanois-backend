@@ -3,7 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
-
+const pool = require('./db/pool');
 const app = express();
 const port = process.env.PORT || 5000;
 const bcrypt = require('bcrypt');
