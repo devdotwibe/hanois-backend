@@ -1,3 +1,5 @@
+import User from '../models/User';
+
 // controllers/userController.js
 const pool = require('../db/pool');
 const bcrypt = require('bcrypt');
@@ -36,14 +38,14 @@ exports.registerUser = async (req, res) => {
   }
 };
 
-exports.getUsers = async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM users');
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+  export const getUsers = async (req, res) => {
+    try {
+      const users = await User.findAll();
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  };
 
 
 exports.loginUser = async (req, res) => {
