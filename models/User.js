@@ -22,8 +22,6 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    createdAt: DataTypes.DATE,
-    updatedAt: DataTypes.DATE,
   },
   {
     tableName: "users",
