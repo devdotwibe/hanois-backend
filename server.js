@@ -11,6 +11,12 @@ const port = process.env.PORT || 5000;
 
 app.use(express.json());
 
+app.use(cors({
+  origin: "http://localhost:3000",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true,
+}));
+
 const pool = new Pool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
