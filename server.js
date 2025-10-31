@@ -28,7 +28,7 @@ pool.connect((err, client, release) => {
 });
 
 
-app.use('/api/users', userRoutes);
+app.use("/api/users", userRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello from Hanois Backend!");
