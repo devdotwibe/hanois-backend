@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 
 
 
-exports.registerUser = async (req, res) => {
+export const registerUser = async (req, res) => {
   try {
     const { firstName, lastName, email, number, password } = req.body;
     if (!firstName || !lastName || !email || !number || !password) {
@@ -47,7 +47,7 @@ exports.registerUser = async (req, res) => {
   };
 
 
-exports.loginUser = async (req, res) => {
+export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
