@@ -1,6 +1,5 @@
 import User from '../models/User';
 
-// controllers/userController.js
 const pool = require('../db/pool');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
