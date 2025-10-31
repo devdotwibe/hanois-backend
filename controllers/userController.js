@@ -1,8 +1,8 @@
 import User from '../models/User.js';
 
 import pool from "../db/pool.js";
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 
 
