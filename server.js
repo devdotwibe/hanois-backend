@@ -14,11 +14,16 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: ["http://localhost:3000", "https://hanois.dotwibe.com"],
+    origin: [
+      "http://localhost:3000",      // local frontend
+      "https://hanois.dotwibe.com"  // production domain (optional)
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true,
+    credentials: true, // if cookies or tokens are used
   })
 );
+
+app.options("*", cors());
 
 const pool = new Pool({
   host: process.env.DB_HOST,
