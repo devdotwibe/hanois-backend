@@ -1,28 +1,73 @@
-// server.js
-require('dotenv').config();
+const { validateEnv, config } = require('./config/env');
+validateEnv();
+
 const express = require('express');
 const cors = require('cors');
+const morgan = require('morgan');
 const userRoutes = require('./routes/userRoutes');
+const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const pool = require('./db/pool');
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = config.port;
 
-// Middleware
+app.use(morgan(config.nodeEnv === 'development' ? 'dev' : 'combined'));
+
 app.use(express.json());
 app.use(cors({
-  origin: '*', // later change to 'https://hanois.dotwibe.com'
-  methods: ['GET', 'POST'],
+  origin: config.cors.origin,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
 }));
 
-// Routes
 app.use('/api/users', userRoutes);
 
 app.get('/', (req, res) => {
-  res.send('Hello from Hanois Backend!');
+  res.json({
+    success: true,
+    message: 'Welcome to Hanois Backend API',
+    version: '1.0.0',
+    endpoints: {
+      users: '/api/users',
+    }
+  });
 });
 
-app.listen(port, () => {
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+const server = app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
+  console.log(`Environment: ${config.nodeEnv}`);
+});
+
+const gracefulShutdown = (signal) => {
+  console.log(`\n${signal} received. Starting graceful shutdown...`);
+  
+  server.close(() => {
+    console.log('HTTP server closed');
+    
+    pool.end(() => {
+      console.log('Database connection pool closed');
+      process.exit(0);
+    });
+  });
+
+  setTimeout(() => {
+    console.error('Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  gracefulShutdown('UNCAUGHT_EXCEPTION');
 });
 
 

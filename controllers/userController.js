@@ -1,90 +1,77 @@
-// controllers/userController.js
-const pool = require('../db/pool');
-const bcrypt = require('bcrypt');
+const UsersModel = require('../models/usersModel');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+const { config } = require('../config/env');
+const { successResponse, errorResponse } = require('../utils/response');
+const { ValidationError, AuthenticationError, ConflictError } = require('../utils/errors');
 
-
-
-
-exports.registerUser = async (req, res) => {
+exports.registerUser = async (req, res, next) => {
   try {
-    const { firstName, lastName, email, number, password } = req.body;
-    if (!firstName || !lastName || !email || !number || !password) {
-      return res.status(400).json({ error: 'Please fill all required fields' });
+    const { firstName, lastName, email, phone, password } = req.body;
+
+    const existingUser = await UsersModel.findByEmail(email);
+    if (existingUser) {
+      throw new ConflictError('Email already registered');
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
     const fullName = `${firstName} ${lastName}`;
-
-    const insertQuery = `
-      INSERT INTO users (name, email, password)
-      VALUES ($1, $2, $3)
-      RETURNING id, name, email, created_at;
-    `;
-    const result = await pool.query(insertQuery, [fullName, email, hashedPassword]);
-
-    res.status(201).json({
-      message: 'User registered successfully',
-      user: result.rows[0],
+    const user = await UsersModel.create({
+      name: fullName,
+      email,
+      password,
+      phone: phone || null,
     });
+
+    successResponse(
+      res, 
+      { user }, 
+      'User registered successfully', 
+      201
+    );
   } catch (err) {
-    console.error('Register Error:', err);
-    if (err.code === '23505') {
-      return res.status(400).json({ error: 'Email already registered' });
-    }
-    res.status(500).json({ error: 'Internal server error' });
+    next(err);
   }
 };
 
-exports.getUsers = async (req, res) => {
+exports.getUsers = async (req, res, next) => {
   try {
-    const result = await pool.query('SELECT * FROM users');
-    res.json(result.rows);
+    const users = await UsersModel.getAll();
+    successResponse(res, { users, count: users.length }, 'Users retrieved successfully');
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 };
 
-
-exports.loginUser = async (req, res) => {
+exports.loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Please provide email and password' });
+    const user = await UsersModel.findByEmail(email);
+    if (!user) {
+      throw new AuthenticationError('Invalid email or password');
     }
-
-    const userQuery = 'SELECT * FROM users WHERE email = $1';
-    const result = await pool.query(userQuery, [email]);
-
-    if (result.rows.length === 0) {
-      return res.status(400).json({ error: 'Invalid email or password' });
-    }
-
-    const user = result.rows[0];
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ error: 'Invalid email or password' });
+      throw new AuthenticationError('Invalid email or password');
     }
 
     const token = jwt.sign(
       { userId: user.id, email: user.email },
-      process.env.JWT_SECRET || 'secretkey', 
-      { expiresIn: '1h' }
+      config.jwt.secret,
+      { expiresIn: config.jwt.expiresIn }
     );
 
-    res.json({
-      message: 'Login successful',
+    successResponse(res, {
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
       },
       token,
-    });
+    }, 'Login successful');
   } catch (err) {
-    console.error('Login Error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    next(err);
   }
 };

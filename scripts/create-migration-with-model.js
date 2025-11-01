@@ -1,6 +1,6 @@
-import { execSync } from "child_process";
-import fs from "fs";
-import path from "path";
+const { execSync } = require("child_process");
+const fs = require("fs");
+const path = require("path");
 
 const migrationName = process.argv[2];
 if (!migrationName) {
@@ -28,10 +28,9 @@ if (!fs.existsSync(modelDir)) {
 const modelPath = path.join(modelDir, modelFileName);
 
 if (!fs.existsSync(modelPath)) {
-  const modelTemplate = `
-import pool from "../db.js";
+  const modelTemplate = `const pool = require("../db/pool");
 
-export default class ${modelClassName} {
+class ${modelClassName} {
   static async getAll() {
     const result = await pool.query("SELECT * FROM ${tableName}");
     return result.rows;
@@ -41,7 +40,14 @@ export default class ${modelClassName} {
     // TODO: add field mappings
     return data;
   }
+
+  static async findById(id) {
+    const result = await pool.query("SELECT * FROM ${tableName} WHERE id = $1", [id]);
+    return result.rows[0];
+  }
 }
+
+module.exports = ${modelClassName};
 `;
 
   fs.writeFileSync(modelPath, modelTemplate.trim());
