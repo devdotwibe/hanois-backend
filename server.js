@@ -5,6 +5,22 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const userRoutes = require('./routes/userRoutes');
+
+const contactRoutes = require('./routes/contactRoutes');
+const bannerRoutes = require('./routes/bannerRoutes');
+
+
+
+
+
+
+
+
+
+
+
+
+
 const adminRoutes = require('./routes/adminRoutes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const pool = require('./db/pool');
@@ -58,6 +74,15 @@ app.options(/.*/, cors());
 app.use('/api/users', userRoutes);
 
 app.use('/api/admin', adminRoutes);
+
+app.use('/api/contacts', contactRoutes);
+
+
+app.use('/api/banner', bannerRoutes);
+
+
+
+
 
 app.get('/', (req, res) => {
   res.json({

@@ -1,27 +1,15 @@
-/**
- * @type {import('node-pg-migrate').ColumnDefinitions | undefined}
- */
-export const shorthands = undefined;
+/* eslint-disable camelcase */
 
-/**
- * @param pgm {import('node-pg-migrate').MigrationBuilder}
- * @param run {() => void | undefined}
- * @returns {Promise<void> | void}
- */
-export const up = (pgm) => {
-      pgm.createTable('faqs', {
-        id: 'id',
-        name: { type: 'varchar(100)', notNull: true },
-        description: { type: 'varchar(255)', notNull: true },
+exports.shorthands = undefined;
 
-    });
+exports.up = (pgm) => {
+  pgm.createTable('faqs', {
+    id: 'id',
+    name: { type: 'varchar(100)', notNull: true },
+    description: { type: 'varchar(255)', notNull: true },
+  });
 };
 
-/**
- * @param pgm {import('node-pg-migrate').MigrationBuilder}
- * @param run {() => void | undefined}
- * @returns {Promise<void> | void}
- */
-export const down = (pgm) => {
-     pgm.dropTable('faq');
+exports.down = (pgm) => {
+  pgm.dropTable('faqs');
 };
