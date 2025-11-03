@@ -2,35 +2,57 @@ const AdminsModel = require("../models/adminsModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { config } = require("../config/env");
+const { successResponse, errorResponse } = require("../utils/response");
+const { AuthenticationError } = require("../utils/errors");
 
-exports.loginAdmin = async (req, res) => {
-  const { email, password } = req.body;
-
+exports.loginAdmin = async (req, res, next) => {
   try {
-    const admin = await AdminsModel.findByEmail(email);
+    const { email, password } = req.body;
 
+    const admin = await AdminsModel.findByEmail(email);
     if (!admin) {
-      return res.status(401).json({ success: false, error: "Invalid email or password" });
+      throw new AuthenticationError("Invalid email or password");
     }
 
     const isMatch = await bcrypt.compare(password, admin.password);
     if (!isMatch) {
-      return res.status(401).json({ success: false, error: "Invalid email or password" });
+      throw new AuthenticationError("Invalid email or password");
     }
 
     const token = jwt.sign(
-      { id: admin.id, email: admin.email },
-      process.env.JWT_SECRET || "a3f9b0e1a8c2d34e5f67b89a0c1d2e3f4a5b6c7d8e9f00112233445566778899",
-      { expiresIn: process.env.JWT_EXPIRES_IN || "1h" }
+      { adminId: admin.id, email: admin.email },
+      config.jwt.secret,
+      { expiresIn: config.jwt.expiresIn }
     );
 
-    return res.json({
-      success: true,
-      token,
-      admin: { id: admin.id, name: admin.name, email: admin.email },
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: config.nodeEnv === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 1000, 
     });
+
+    successResponse(
+      res,
+      {
+        admin: {
+          id: admin.id,
+          name: admin.name,
+          email: admin.email,
+        },
+      },
+      "Login successful"
+    );
   } catch (err) {
-    console.error("Login error:", err);
-    return res.status(500).json({ success: false, error: "Server error" });
+    next(err);
+  }
+};
+
+exports.getAdmins = async (req, res, next) => {
+  try {
+    const admins = await AdminsModel.getAll();
+    successResponse(res, { admins, count: admins.length }, "Admins fetched");
+  } catch (err) {
+    next(err);
   }
 };
