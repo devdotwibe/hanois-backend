@@ -9,18 +9,6 @@ const userRoutes = require('./routes/userRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const bannerRoutes = require('./routes/bannerRoutes');
 
-
-
-
-
-
-
-
-
-
-
-
-
 const adminRoutes = require('./routes/adminRoutes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const pool = require('./db/pool');
@@ -32,42 +20,13 @@ app.use(morgan(config.nodeEnv === 'development' ? 'dev' : 'combined'));
 
 app.use(express.json());
 
-app.use(cors({
-  origin: [
-    "http://localhost:3000",
-    "https://hanois.dotwibe.com"
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "X-Requested-With",
-    "Accept"
-  ],
-  credentials: true
-}));
-
-
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://hanois.dotwibe.com"
-];
-
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    origin: ["http://localhost:3000", "https://hanois.dotwibe.com"],
     credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
 
 app.options(/.*/, cors());
 
