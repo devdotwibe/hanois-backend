@@ -1,8 +1,8 @@
 {
   "development": {
-    "username": "root",
-    "password": null,
-    "database": "database_development",
+    "username": "hanois_user",
+    "password": "hanois_user",
+    "database": "hanois_db",
     "host": "127.0.0.1",
     "dialect": "mysql"
   },
