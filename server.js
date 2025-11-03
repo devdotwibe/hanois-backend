@@ -18,11 +18,17 @@ app.use(express.json());
 
 app.use(cors({
   origin: [
-    "https://hanois.dotwibe.com",
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "https://hanois.dotwibe.com"
   ],
   methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true,
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept"
+  ],
+  credentials: true
 }));
 
 
