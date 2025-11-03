@@ -73,6 +73,28 @@ exports.loginAdmin = async (req, res, next) => {
   }
 };
 
+
+exports.logoutAdmin = async (req, res) => {
+  try {
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "Lax",
+      path: "/"
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Logout failed",
+    });
+  }
+};
+
 exports.getAdmins = async (req, res, next) => {
   try {
     const admins = await AdminsModel.getAll();
