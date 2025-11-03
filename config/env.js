@@ -48,7 +48,7 @@ const config = {
   },
 
   jwt: {
-    secret: process.env.JWT_SECRET,
+    secret: process.env.JWT_SECRET || 'a3f9b0e1a8c2d34e5f67b89a0c1d2e3f4a5b6c7d8e9f00112233445566778899',
     expiresIn: process.env.JWT_EXPIRES_IN || '1h',
   },
 
