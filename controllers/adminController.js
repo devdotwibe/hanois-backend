@@ -33,15 +33,14 @@ exports.loginAdmin = async (req, res, next) => {
     //   maxAge: 60 * 60 * 1000, 
     // });
 
-    res.cookie("token", token, {
-        httpOnly: true,         
-        // secure: false,  
-        secure: true,     
-        sameSite: "none",             
-        // sameSite: "lax",         
-        path: "/",               
-        maxAge: 60 * 60 * 1000,  
-    });
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: false, 
+            sameSite: "lax", 
+            path: "/",
+            maxAge: 60 * 60 * 1000, 
+        });
+
 
     successResponse(
       res,
