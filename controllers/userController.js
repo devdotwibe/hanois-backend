@@ -56,17 +56,17 @@ exports.loginUser = async (req, res, next) => {
       throw new AuthenticationError('Invalid email or password');
     }
 
-    // const token = jwt.sign(
-    //   { userId: user.id, email: user.email },
-    //   config.jwt.secret,
-    //   { expiresIn: config.jwt.expiresIn }
-    // );
-
     const token = jwt.sign(
-    { adminId: admin.id, email: admin.email },
-      "a3f9b0e1a8c2d34e5f67b89a0c1d2e3f4a5b6c7d8e9f00112233445566778899",
-      { expiresIn: "1h" }
+      { userId: user.id, email: user.email },
+      config.jwt.secret,
+      { expiresIn: config.jwt.expiresIn }
     );
+
+    // const token = jwt.sign(
+    // { adminId: admin.id, email: admin.email },
+    //   "a3f9b0e1a8c2d34e5f67b89a0c1d2e3f4a5b6c7d8e9f00112233445566778899",
+    //   { expiresIn: "1h" }
+    // );
 
     successResponse(res, {
       user: {
