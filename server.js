@@ -36,7 +36,6 @@ app.use('/api/admin', adminRoutes);
 
 app.use('/api/contacts', contactRoutes);
 
-
 app.use('/api/banner', bannerRoutes);
 
 
