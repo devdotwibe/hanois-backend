@@ -5,12 +5,6 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const userRoutes = require('./routes/userRoutes');
-
-const contactRoutes = require('./routes/contactRoutes');
-
-
-
-
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const pool = require('./db/pool');
 
@@ -20,17 +14,19 @@ const port = config.port;
 app.use(morgan(config.nodeEnv === 'development' ? 'dev' : 'combined'));
 
 app.use(express.json());
+
 app.use(cors({
-  origin: config.cors.origin,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  origin: [
+    "https://hanois.dotwibe.com",
+    "http://localhost:3000"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true,
 }));
 
 app.use('/api/users', userRoutes);
 
-app.use('/api/contacts', contactRoutes);
-
-
-
+app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => {
   res.json({
