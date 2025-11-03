@@ -25,11 +25,20 @@ exports.loginAdmin = async (req, res, next) => {
       { expiresIn: config.jwt.expiresIn }
     );
 
+    // res.cookie("token", token, {
+    //   httpOnly: true,
+    //   secure: config.nodeEnv === "production",
+    //   sameSite: "lax",
+    //   path: "/", 
+    //   maxAge: 60 * 60 * 1000, 
+    // });
+
     res.cookie("token", token, {
-      httpOnly: true,
-      secure: config.nodeEnv === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 1000, 
+        httpOnly: true,         
+        secure: false,           
+        sameSite: "lax",         
+        path: "/",               
+        maxAge: 60 * 60 * 1000,  
     });
 
     successResponse(
