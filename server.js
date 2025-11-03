@@ -5,6 +5,12 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const userRoutes = require('./routes/userRoutes');
+
+const contactRoutes = require('./routes/contactRoutes');
+
+
+
+
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const pool = require('./db/pool');
 
@@ -20,6 +26,11 @@ app.use(cors({
 }));
 
 app.use('/api/users', userRoutes);
+
+app.use('/api/contacts', contactRoutes);
+
+
+
 
 app.get('/', (req, res) => {
   res.json({
