@@ -32,15 +32,28 @@ app.use(cors({
 }));
 
 
-app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "http://localhost:3000");
-    res.header(
-      "Access-Control-Allow-Headers",
-      "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-    );
-    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    next();
-  });
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://hanois.dotwibe.com"
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+app.options("*", cors());
 
 app.use('/api/users', userRoutes);
 
