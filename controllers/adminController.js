@@ -5,46 +5,28 @@ const { config } = require("../config/env");
 const { successResponse, errorResponse } = require("../utils/response");
 const { AuthenticationError } = require("../utils/errors");
 
-exports.loginAdmin = async (req, res, next) => {
-  try {
-    const { email, password } = req.body;
+exports.loginAdmin = async (req, res) => {
+  const { email, password } = req.body;
 
-    const admin = await AdminsModel.findByEmail(email);
+  try {
+    const admin = await Admin.findOne({ where: { email } });
     if (!admin) {
-      throw new AuthenticationError("Invalid email or password");
+      return res.status(401).json({ success: false, error: "Invalid email or password" });
     }
 
     const isMatch = await bcrypt.compare(password, admin.password);
     if (!isMatch) {
-      throw new AuthenticationError("Invalid email or password");
+      return res.status(401).json({ success: false, error: "Invalid email or password" });
     }
 
-    const token = jwt.sign(
-      { adminId: admin.id, email: admin.email },
-      config.jwt.secret,
-      { expiresIn: config.jwt.expiresIn }
-    );
-
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: config.nodeEnv === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 1000, 
+    const token = jwt.sign({ id: admin.id, email: admin.email }, process.env.JWT_SECRET, {
+      expiresIn: process.env.JWT_EXPIRES_IN || "1h",
     });
 
-    successResponse(
-      res,
-      {
-        admin: {
-          id: admin.id,
-          name: admin.name,
-          email: admin.email,
-        },
-      },
-      "Login successful"
-    );
+    res.json({ success: true, token });
   } catch (err) {
-    next(err);
+    console.error(err);
+    res.status(500).json({ success: false, error: "Server error" });
   }
 };
 
