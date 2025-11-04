@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const { successResponse, errorResponse } = require('../utils/response');
 const { ValidationError, AuthenticationError, ConflictError } = require('../utils/errors');
 const { config } = require('../config/env');
+const { sendMail } = require('../config/mailer');
 
 exports.registerProvider = async (req, res, next) => {
   try {
