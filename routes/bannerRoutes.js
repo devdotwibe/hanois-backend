@@ -6,14 +6,18 @@ const {
   getBanners,
   getBannerById,
   updateBanner,
+  updateSingleBanner,
   deleteBanner,
-} = require("../controllers/homeController"); // or '../controllers/bannerController' if you separate it later
+} = require("../controllers/bannerController");
 
 // 🟩 Create a new banner
 router.post("/", createBanner);
 
-// 🟩 Get all banners
+// 🟩 Get all banners (optional query filters: post_id, language)
 router.get("/", getBanners);
+
+// 🟩 Update first banner (special case)
+router.put("/update-single", updateSingleBanner);
 
 // 🟩 Get a single banner by ID
 router.get("/:id", getBannerById);

@@ -82,3 +82,19 @@ exports.deleteBanner = async (req, res, next) => {
     next(err);
   }
 };
+
+
+// 🟩 Update the first banner (special case)
+exports.updateSingleBanner = async (req, res, next) => {
+  try {
+    const banner = await BannerModel.updateSingle(req.body);
+
+    if (!banner) {
+      throw new NotFoundError("No banner found to update");
+    }
+
+    successResponse(res, { banner }, "Single banner updated successfully");
+  } catch (err) {
+    next(err);
+  }
+};
