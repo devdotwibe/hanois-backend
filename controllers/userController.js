@@ -111,21 +111,21 @@ exports.login = async (req, res, next) => {
       role = "user";
     }
 
-    if (!account) {
-      const providerResult = await pool.query("SELECT * FROM providers WHERE email = $1", [email]);
-      if (providerResult.rows.length > 0) {
-        account = providerResult.rows[0];
-        role = "provider";
-      }
-    }
+    // if (!account) {
+    //   const providerResult = await pool.query("SELECT * FROM providers WHERE email = $1", [email]);
+    //   if (providerResult.rows.length > 0) {
+    //     account = providerResult.rows[0];
+    //     role = "provider";
+    //   }
+    // }
 
     if (!account) {
-      throw new AuthenticationError("Invalid email or password test 3",account.password);
+      throw new AuthenticationError("Invalid email or password test 3",account.email);
     }
 
     const isMatch = await bcrypt.compare(password, account.password);
     if (!isMatch) {
-      throw new AuthenticationError("Invalid email or password test",account.password);
+      throw new AuthenticationError("Invalid email or password test",account.email);
     }
 
     const token = jwt.sign(
