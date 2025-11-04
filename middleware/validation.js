@@ -69,7 +69,35 @@ const validateLogin = (req, res, next) => {
   next();
 };
 
+
+const providerValidation = (req, res, next) => {
+  const { name, email, phone } = req.body;
+  const errors = [];
+
+  const namevalidation = validateName(name);
+  if (!firstNameValidation.valid) {
+    errors.push({ field: 'name', message: namevalidation.message });
+  }
+
+  const emailValidation = validateEmail(email);
+  if (!emailValidation.valid) {
+    errors.push({ field: 'email', message: emailValidation.message });
+  }
+
+  const phoneValidation = validatePhone(phone);
+  if (!phoneValidation.valid) {
+    errors.push({ field: 'phone', message: phoneValidation.message });
+  }
+
+  if (errors.length > 0) {
+    return errorResponse(res, 'Validation failed', 400, errors);
+  }
+
+  next();
+};
+
 module.exports = {
   validateRegistration,
   validateLogin,
+  providerValidation
 };

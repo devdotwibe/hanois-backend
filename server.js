@@ -9,20 +9,11 @@ const userRoutes = require('./routes/userRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const bannerRoutes = require('./routes/bannerRoutes');
 
-
-
 const adminRoutes = require('./routes/adminRoutes');
-
 
 const settingsRoutes = require('./routes/settingsRoutes');
 
-
-
-
-
-
-
-
+const providerRouted = require('./routes/providerRouted');
 
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const pool = require('./db/pool');
@@ -45,6 +36,8 @@ app.use(
 
 
 app.use('/api/users', userRoutes);
+
+app.use('/api/providers', providerRouted);
 
 app.use('/api/admin', adminRoutes);
 
