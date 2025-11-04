@@ -70,6 +70,14 @@ exports.loginUser = async (req, res, next) => {
     //   { expiresIn: "1h" }
     // );
 
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: true,          
+        sameSite: "Lax",       
+        path: "/",             
+        maxAge: 60 * 60 * 1000
+      });
+
     successResponse(res, {
       user: {
         id: user.id,
