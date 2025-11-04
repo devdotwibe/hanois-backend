@@ -50,14 +50,15 @@ exports.getBannerById = async (req, res, next) => {
   }
 };
 
-// 🟩 Update banner by ID
+// 🟩 Update banner (without ID)
 exports.updateBanner = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const banner = await BannerModel.updateById(id, req.body);
+    // Update the first or only banner record
+    const banner = await BannerModel.updateSingle(req.body);
 
     if (!banner) {
-      throw new NotFoundError("Banner not found or not updated");
+      // No banner to update, maybe none exists yet
+      throw new NotFoundError("No banner found to update");
     }
 
     successResponse(res, { banner }, "Banner updated successfully");

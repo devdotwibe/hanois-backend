@@ -82,6 +82,44 @@ class BannerModel {
     );
     return result.rows[0];
   }
+
+  // 🟩 Update single banner (no ID — update the first banner)
+  static async updateSingle(data) {
+    const fields = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (data.engtitle) {
+      fields.push(`engtitle = $${paramIndex++}`);
+      values.push(data.engtitle);
+    }
+    if (data.engdescription) {
+      fields.push(`engdescription = $${paramIndex++}`);
+      values.push(data.engdescription);
+    }
+    if (data.arabtitle) {
+      fields.push(`arabtitle = $${paramIndex++}`);
+      values.push(data.arabtitle);
+    }
+    if (data.arabdescription) {
+      fields.push(`arabdescription = $${paramIndex++}`);
+      values.push(data.arabdescription);
+    }
+
+    if (fields.length === 0) return null;
+
+    fields.push(`updated_at = NOW()`);
+
+    const result = await pool.query(
+      `UPDATE banner 
+       SET ${fields.join(", ")}
+       WHERE id = (SELECT id FROM banner ORDER BY created_at ASC LIMIT 1)
+       RETURNING id, engtitle, engdescription, arabtitle, arabdescription, created_at, updated_at`,
+      values
+    );
+
+    return result.rows[0];
+  }
 }
 
 module.exports = BannerModel;
