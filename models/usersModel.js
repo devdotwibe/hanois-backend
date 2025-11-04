@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 
 class UsersModel {
   static async getAll() {
-    const result = await pool.query("SELECT id, name, email, phone, created_at FROM users");
+    const result = await pool.query("SELECT id, name, email, phone,'password' created_at FROM users");
     return result.rows;
   }
 
