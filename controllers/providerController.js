@@ -4,7 +4,6 @@ const bcrypt = require('bcrypt');
 const { successResponse, errorResponse } = require('../utils/response');
 const { ValidationError, AuthenticationError, ConflictError } = require('../utils/errors');
 
-// ✅ Register Provider
 exports.registerProvider = async (req, res, next) => {
   try {
     const { name, email, phone, register_no, password, location, team_size, service, website, social_media } = req.body;
