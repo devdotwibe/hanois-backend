@@ -39,7 +39,7 @@ exports.registerProvider = async (req, res, next) => {
         );
 
         const resetLink = `${
-        config.app.baseUrl || "https://hanois.dotwibe.com"
+             "https://hanois.dotwibe.com"
         }/login?reset-password=${resetToken}`;
 
            const registrationHtml = `
