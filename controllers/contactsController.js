@@ -3,6 +3,11 @@ const { successResponse } = require('../utils/response');
 const { ValidationError, NotFoundError } = require('../utils/errors');
 const { sendMail } = require('../config/mailer');
 const { config } = require('../config/env');
+const SettingsModel = require('../models/SettingsModel');
+
+
+
+
 
 // 🟩 Create new contact + send email
 exports.createContact = async (req, res, next) => {
@@ -23,7 +28,21 @@ exports.createContact = async (req, res, next) => {
     });
 
     // 📨 Send email to admin
-   const adminEmail = config.mail.adminEmail;
+let adminEmail;
+
+// Try fetching from settings table
+try {
+  const setting = await SettingsModel.findByKey('admin_email');
+  adminEmail = setting?.value;
+} catch (err) {
+  console.error("⚠️ Failed to fetch admin_email from settings:", err);
+}
+
+// Fallback to .env if not found
+if (!adminEmail) {
+  adminEmail = config.mail.adminEmail;
+}
+
 
     console.log("📮 Sending admin email to:", adminEmail);
     const adminEmailHtml = `
