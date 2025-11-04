@@ -75,7 +75,7 @@ const providerValidation = (req, res, next) => {
   const errors = [];
 
   const namevalidation = validateName(name);
-  if (!firstNameValidation.valid) {
+  if (!namevalidation.valid) {
     errors.push({ field: 'name', message: namevalidation.message });
   }
 
