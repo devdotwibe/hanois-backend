@@ -6,6 +6,34 @@ const { ValidationError, AuthenticationError, ConflictError } = require('../util
 const { config } = require('../config/env');
 const { sendMail } = require('../config/mailer');
 
+const JWT_SECRET = "a3f9b0e1a8c2d34e5f67b89a0c1d2e3f4a5b6c7d8e9f00112233445566778899";
+
+
+exports.resetPassword = async (req, res, next) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return errorResponse(res, "Missing token or password", 400);
+    }
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+      return errorResponse(res, "Invalid or expired token", 400);
+    }
+
+    const providerId = decoded.providerId;
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await ProviderModel.updatePassword(providerId, hashedPassword);
+
+    successResponse(res, {}, "Password reset successful");
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.registerProvider = async (req, res, next) => {
   try {
     const { name, email, phone, register_no, password, location, team_size, service, website, social_media } = req.body;
