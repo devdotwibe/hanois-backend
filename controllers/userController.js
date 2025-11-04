@@ -14,11 +14,13 @@ exports.registerUser = async (req, res, next) => {
       throw new ConflictError('Email already registered');
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const fullName = `${firstName} ${lastName}`;
     const user = await UsersModel.create({
       name: fullName,
       email,
-      password,
+      password: hashedPassword,
       phone: phone || null,
     });
 
