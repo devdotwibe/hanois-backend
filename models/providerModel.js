@@ -21,7 +21,7 @@ class ProviderModel {
       social_media
     } = data;
 
-    const hashedPassword = await bcrypt.hash(password||123456787, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const result = await pool.query(
       `INSERT INTO providers 

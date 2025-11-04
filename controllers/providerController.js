@@ -13,7 +13,9 @@ exports.registerProvider = async (req, res, next) => {
       throw new ConflictError('Email already registered');
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+     const plainPassword = password || '12345678';
+
+    const hashedPassword =  await bcrypt.hash(plainPassword.toString(), 10);
 
     const provider = await ProviderModel.create({
       name,
