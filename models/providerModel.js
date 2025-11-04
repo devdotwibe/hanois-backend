@@ -7,6 +7,15 @@ class ProviderModel {
     return result.rows;
   }
 
+
+  static async updatePassword(providerId, hashedPassword) {
+    const result = await pool.query(
+      "UPDATE providers SET password = $1 WHERE id = $2 RETURNING id, email",
+      [hashedPassword, providerId]
+    );
+    return result.rows[0];
+  }
+
   static async create(data) {
     const {
       name,
