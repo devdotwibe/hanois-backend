@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-
 const {
   createBanner,
   getBanners,
@@ -10,22 +9,27 @@ const {
   deleteBanner,
 } = require("../controllers/bannerController");
 
-// 🟩 Create a new banner
-router.post("/", createBanner);
+// 🧠 Validate numeric IDs only for ID-based routes
+router.param("id", (req, res, next, id) => {
+  if (isNaN(id)) {
+    return res.status(400).json({
+      success: false,
+      error: "Invalid ID format — must be numeric",
+    });
+  }
+  next();
+});
 
-// 🟩 Get all banners (optional query filters: post_id, language)
-router.get("/", getBanners);
+// 🟩 Standard Routes
+router.post("/", createBanner);    // Create
+router.get("/", getBanners);       // Get all
 
-// 🟩 Update first banner (special case)
-router.put("/update-single", updateSingleBanner);
+// 🟩 This must be before :id routes to avoid "Invalid ID" error
+router.put("/update-single", updateSingleBanner); // Update without ID (special case)
 
-// 🟩 Get a single banner by ID
-router.get("/:id", getBannerById);
-
-// 🟩 Update a banner by ID
-router.put("/:id", updateBanner);
-
-// 🟩 Delete a banner by ID
-router.delete("/:id", deleteBanner);
+// 🟩 Routes that depend on a numeric ID
+router.get("/:id", getBannerById);    // Get by ID
+router.put("/:id", updateBanner);     // Update by ID
+router.delete("/:id", deleteBanner);  // Delete by ID
 
 module.exports = router;

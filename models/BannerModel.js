@@ -48,6 +48,8 @@ class BannerModel {
 
   // 🟩 Find banner by ID
   static async findById(id) {
+    if (isNaN(id)) throw new Error("Invalid ID format — must be numeric");
+
     const result = await pool.query(
       `SELECT 
         b.id, b.engtitle, b.engdescription, b.arabtitle, b.arabdescription, 
@@ -61,41 +63,42 @@ class BannerModel {
     return result.rows[0];
   }
 
+  // 🟩 Find banner by post_id + language
+  static async findByPostAndLang(post_id, language) {
+    const result = await pool.query(
+      `SELECT * FROM banner WHERE post_id = $1 AND language = $2 LIMIT 1`,
+      [post_id, language]
+    );
+    return result.rows[0];
+  }
+
   // 🟩 Update banner by ID
   static async updateById(id, data) {
+    if (isNaN(id)) throw new Error("Invalid ID format — must be numeric");
+
     const fields = [];
     const values = [];
     let paramIndex = 1;
 
-    // Dynamically add fields if provided
-    if (data.engtitle) {
-      fields.push(`engtitle = $${paramIndex++}`);
-      values.push(data.engtitle);
-    }
-    if (data.engdescription) {
-      fields.push(`engdescription = $${paramIndex++}`);
-      values.push(data.engdescription);
-    }
-    if (data.arabtitle) {
-      fields.push(`arabtitle = $${paramIndex++}`);
-      values.push(data.arabtitle);
-    }
-    if (data.arabdescription) {
-      fields.push(`arabdescription = $${paramIndex++}`);
-      values.push(data.arabdescription);
-    }
-    if (data.post_id) {
-      fields.push(`post_id = $${paramIndex++}`);
-      values.push(data.post_id);
-    }
-    if (data.language) {
-      fields.push(`language = $${paramIndex++}`);
-      values.push(data.language);
+    const updatableFields = [
+      "engtitle",
+      "engdescription",
+      "arabtitle",
+      "arabdescription",
+      "post_id",
+      "language",
+    ];
+
+    for (const key of updatableFields) {
+      if (data[key] !== undefined) {
+        fields.push(`${key} = $${paramIndex++}`);
+        values.push(data[key]);
+      }
     }
 
     if (fields.length === 0) return null;
 
-    // Add updated_at and WHERE condition
+    // Always update timestamp
     fields.push(`updated_at = NOW()`);
     values.push(id);
 
@@ -112,6 +115,8 @@ class BannerModel {
 
   // 🟩 Delete banner by ID
   static async deleteById(id) {
+    if (isNaN(id)) throw new Error("Invalid ID format — must be numeric");
+
     const result = await pool.query(
       `DELETE FROM banner WHERE id = $1 RETURNING id`,
       [id]
@@ -119,35 +124,26 @@ class BannerModel {
     return result.rows[0];
   }
 
-  // 🟩 Update single banner (no ID — update the first banner)
+  // 🟩 Update first banner (if needed for fallback)
   static async updateSingle(data) {
     const fields = [];
     const values = [];
     let paramIndex = 1;
 
-    if (data.engtitle) {
-      fields.push(`engtitle = $${paramIndex++}`);
-      values.push(data.engtitle);
-    }
-    if (data.engdescription) {
-      fields.push(`engdescription = $${paramIndex++}`);
-      values.push(data.engdescription);
-    }
-    if (data.arabtitle) {
-      fields.push(`arabtitle = $${paramIndex++}`);
-      values.push(data.arabtitle);
-    }
-    if (data.arabdescription) {
-      fields.push(`arabdescription = $${paramIndex++}`);
-      values.push(data.arabdescription);
-    }
-    if (data.post_id) {
-      fields.push(`post_id = $${paramIndex++}`);
-      values.push(data.post_id);
-    }
-    if (data.language) {
-      fields.push(`language = $${paramIndex++}`);
-      values.push(data.language);
+    const updatableFields = [
+      "engtitle",
+      "engdescription",
+      "arabtitle",
+      "arabdescription",
+      "post_id",
+      "language",
+    ];
+
+    for (const key of updatableFields) {
+      if (data[key] !== undefined) {
+        fields.push(`${key} = $${paramIndex++}`);
+        values.push(data[key]);
+      }
     }
 
     if (fields.length === 0) return null;
@@ -163,6 +159,32 @@ class BannerModel {
     );
 
     return result.rows[0];
+  }
+
+  // 🟩 Update both English and Arabic banners (helper)
+  static async updateEnglishAndArabic(data) {
+    const { engtitle, engdescription, arabtitle_ar, arabdescription_ar } = data;
+
+    const enResult = await pool.query(
+      `UPDATE banner
+       SET engtitle = $1, engdescription = $2, updated_at = NOW()
+       WHERE language = 'en'
+       RETURNING *`,
+      [engtitle, engdescription]
+    );
+
+    const arResult = await pool.query(
+      `UPDATE banner
+       SET arabtitle = $1, arabdescription = $2, updated_at = NOW()
+       WHERE language = 'ar'
+       RETURNING *`,
+      [arabtitle_ar, arabdescription_ar]
+    );
+
+    return {
+      english: enResult.rows[0],
+      arabic: arResult.rows[0],
+    };
   }
 }
 

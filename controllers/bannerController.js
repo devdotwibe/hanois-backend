@@ -1,24 +1,83 @@
 const BannerModel = require("../models/BannerModel");
+const PostModel = require("../models/PostModel");
 const { successResponse } = require("../utils/response");
 const { ValidationError, NotFoundError } = require("../utils/errors");
 
-// 🟩 Create a new banner
+// 🟩 Create or Update (smart upsert)
 exports.createBanner = async (req, res, next) => {
   try {
-    const { engtitle, engdescription, arabtitle, arabdescription } = req.body;
-
-    if (!engtitle || !engdescription || !arabtitle || !arabdescription) {
-      throw new ValidationError("All banner fields are required");
-    }
-
-    const banner = await BannerModel.create({
+    const {
       engtitle,
       engdescription,
       arabtitle,
       arabdescription,
-    });
+      engtitle_ar,
+      engdescription_ar,
+      arabtitle_ar,
+      arabdescription_ar,
+    } = req.body;
 
-    successResponse(res, { banner }, "Banner created successfully", 201);
+    // Validate required fields
+    if (
+      !engtitle ||
+      !engdescription ||
+      !arabtitle ||
+      !arabdescription ||
+      !engtitle_ar ||
+      !engdescription_ar ||
+      !arabtitle_ar ||
+      !arabdescription_ar
+    ) {
+      throw new ValidationError("All English and Arabic banner fields are required");
+    }
+
+    // 🟩 Ensure home_banner post exists
+    let post = await PostModel.findByName("home_banner");
+    if (!post) {
+      post = await PostModel.create({ name: "home_banner" });
+    }
+
+    // 🟩 English banner: update or create
+    let banner_en = await BannerModel.findByPostAndLang(post.id, "en");
+    if (banner_en) {
+      banner_en = await BannerModel.updateById(banner_en.id, {
+        engtitle,
+        engdescription,
+        arabtitle,
+        arabdescription,
+      });
+    } else {
+      banner_en = await BannerModel.create({
+        engtitle,
+        engdescription,
+        arabtitle,
+        arabdescription,
+        language: "en",
+        post_id: post.id,
+      });
+    }
+
+    // 🟩 Arabic banner: update or create
+    let banner_ar = await BannerModel.findByPostAndLang(post.id, "ar");
+    if (banner_ar) {
+      banner_ar = await BannerModel.updateById(banner_ar.id, {
+        engtitle: engtitle_ar,
+        engdescription: engdescription_ar,
+        arabtitle: arabtitle_ar,
+        arabdescription: arabdescription_ar,
+      });
+    } else {
+      banner_ar = await BannerModel.create({
+        engtitle: engtitle_ar,
+        engdescription: engdescription_ar,
+        arabtitle: arabtitle_ar,
+        arabdescription: arabdescription_ar,
+        language: "ar",
+        post_id: post.id,
+      });
+    }
+
+    successResponse(res, { banner_en, banner_ar }, "Banners created or updated successfully", 201);
   } catch (err) {
     next(err);
   }
@@ -39,28 +98,19 @@ exports.getBannerById = async (req, res, next) => {
   try {
     const { id } = req.params;
     const banner = await BannerModel.findById(id);
-
-    if (!banner) {
-      throw new NotFoundError("Banner not found");
-    }
-
+    if (!banner) throw new NotFoundError("Banner not found");
     successResponse(res, { banner }, "Banner retrieved successfully");
   } catch (err) {
     next(err);
   }
 };
 
-// 🟩 Update banner (without ID)
+// 🟩 Update banner by ID (generic)
 exports.updateBanner = async (req, res, next) => {
   try {
-    // Update the first or only banner record
-    const banner = await BannerModel.updateSingle(req.body);
-
-    if (!banner) {
-      // No banner to update, maybe none exists yet
-      throw new NotFoundError("No banner found to update");
-    }
-
+    const { id } = req.params;
+    const banner = await BannerModel.updateById(id, req.body);
+    if (!banner) throw new NotFoundError("No banner found to update");
     successResponse(res, { banner }, "Banner updated successfully");
   } catch (err) {
     next(err);
@@ -72,28 +122,74 @@ exports.deleteBanner = async (req, res, next) => {
   try {
     const { id } = req.params;
     const deleted = await BannerModel.deleteById(id);
-
-    if (!deleted) {
-      throw new NotFoundError("Banner not found or already deleted");
-    }
-
+    if (!deleted) throw new NotFoundError("Banner not found or already deleted");
     successResponse(res, { id: deleted.id }, "Banner deleted successfully");
   } catch (err) {
     next(err);
   }
 };
 
-
-// 🟩 Update the first banner (special case)
+// 🟩 Update the “home_banner” (used by /update-single)
 exports.updateSingleBanner = async (req, res, next) => {
   try {
-    const banner = await BannerModel.updateSingle(req.body);
+    const {
+      engtitle,
+      engdescription,
+      arabtitle,
+      arabdescription,
+      engtitle_ar,
+      engdescription_ar,
+      arabtitle_ar,
+      arabdescription_ar,
+    } = req.body;
 
-    if (!banner) {
-      throw new NotFoundError("No banner found to update");
+    // 🟩 Ensure home_banner post exists
+    let post = await PostModel.findByName("home_banner");
+    if (!post) {
+      post = await PostModel.create({ name: "home_banner" });
     }
 
-    successResponse(res, { banner }, "Single banner updated successfully");
+    // 🟩 English banner
+    let banner_en = await BannerModel.findByPostAndLang(post.id, "en");
+    if (banner_en) {
+      banner_en = await BannerModel.updateById(banner_en.id, {
+        engtitle,
+        engdescription,
+        arabtitle,
+        arabdescription,
+      });
+    } else {
+      banner_en = await BannerModel.create({
+        engtitle,
+        engdescription,
+        arabtitle,
+        arabdescription,
+        language: "en",
+        post_id: post.id,
+      });
+    }
+
+    // 🟩 Arabic banner
+    let banner_ar = await BannerModel.findByPostAndLang(post.id, "ar");
+    if (banner_ar) {
+      banner_ar = await BannerModel.updateById(banner_ar.id, {
+        engtitle: engtitle_ar,
+        engdescription: engdescription_ar,
+        arabtitle: arabtitle_ar,
+        arabdescription: arabdescription_ar,
+      });
+    } else {
+      banner_ar = await BannerModel.create({
+        engtitle: engtitle_ar,
+        engdescription: engdescription_ar,
+        arabtitle: arabtitle_ar,
+        arabdescription: arabdescription_ar,
+        language: "ar",
+        post_id: post.id,
+      });
+    }
+
+    successResponse(res, { banner_en, banner_ar }, "Banners updated successfully", 200);
   } catch (err) {
     next(err);
   }
