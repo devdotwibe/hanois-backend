@@ -5,6 +5,7 @@ const { successResponse, errorResponse } = require('../utils/response');
 const { ValidationError, AuthenticationError, ConflictError } = require('../utils/errors');
 const { config } = require('../config/env');
 const { sendMail } = require('../config/mailer');
+const { validateEmail } = require('../utils/validateEmail');
 
 const JWT_SECRET = "a3f9b0e1a8c2d34e5f67b89a0c1d2e3f4a5b6c7d8e9f00112233445566778899";
 
@@ -37,6 +38,13 @@ exports.resetPassword = async (req, res, next) => {
 exports.registerProvider = async (req, res, next) => {
   try {
     const { name, email, phone, register_no, password, location, team_size, service, website, social_media } = req.body;
+
+
+    const emailCheck = await validateEmail(email);
+
+    if (!emailCheck.valid) {
+      return res.status(400).json({ error: emailCheck.message });
+    }
 
     const existingProvider = await ProviderModel.findByEmail(email);
     if (existingProvider) {

@@ -4,10 +4,17 @@ const bcrypt = require('bcrypt');
 const { config } = require('../config/env');
 const { successResponse, errorResponse } = require('../utils/response');
 const { ValidationError, AuthenticationError, ConflictError } = require('../utils/errors');
+const { validateEmail } = require('../utils/validateEmail');
 
 exports.registerUser = async (req, res, next) => {
   try {
     const { firstName, lastName, email, phone, password } = req.body;
+
+    const emailCheck = await validateEmail(email);
+
+    if (!emailCheck.valid) {
+      return res.status(400).json({ error: emailCheck.message });
+    }
 
     const existingUser = await UsersModel.findByEmail(email);
     if (existingUser) {

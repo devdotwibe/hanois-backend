@@ -71,6 +71,7 @@ const validateLogin = (req, res, next) => {
 
 
 const providerValidation = (req, res, next) => {
+  
   const { name, email, phone } = req.body;
   const errors = [];
 
