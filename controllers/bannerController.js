@@ -50,17 +50,17 @@ exports.createBanner = async (req, res, next) => {
     let banner_ar = await BannerModel.findByPostAndLang(post.id, "ar");
     if (banner_ar) {
       banner_ar = await BannerModel.updateById(banner_ar.id, {
-        engtitle: engtitle_ar,
-        engdescription: engdescription_ar,
-        arabtitle: arabtitle_ar,
-        arabdescription: arabdescription_ar,
+        engtitle: engtitle,
+        engdescription: engdescription,
+        arabtitle: engtitle,
+        arabdescription: arabdescription,
       });
     } else {
       banner_ar = await BannerModel.create({
-        engtitle: engtitle_ar,
-        engdescription: engdescription_ar,
-        arabtitle: arabtitle_ar,
-        arabdescription: arabdescription_ar,
+        engtitle: arabtitle,
+        engdescription: arabdescription,
+        arabtitle: arabtitle,
+        arabdescription: arabdescription,
         language: "ar",
         post_id: post.id,
       });
