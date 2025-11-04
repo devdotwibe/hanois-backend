@@ -51,49 +51,113 @@ exports.getUsers = async (req, res, next) => {
   }
 };
 
-exports.loginUser = async (req, res, next) => {
+// exports.loginUser = async (req, res, next) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     const user = await UsersModel.findByEmail(email);
+//     if (!user) {
+//       throw new AuthenticationError('Invalid email or password');
+//     }
+
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch) {
+//       throw new AuthenticationError('Invalid email or password');
+//     }
+
+//     const token = jwt.sign(
+//       { userId: user.id, email: user.email },
+//       "a3f9b0e1a8c2d34e5f67b89a0c1d2e3f4a5b6c7d8e9f00112233445566778899",
+//       { expiresIn: "1h" }
+//       );
+
+//       res.cookie("token", token, {
+//         httpOnly: true,
+//         secure: true,          
+//         sameSite: "Lax",       
+//         path: "/",             
+//         maxAge: 60 * 60 * 1000
+//       });
+
+//     successResponse(res, {
+//       user: {
+//         id: user.id,
+//         name: user.name,
+//         email: user.email,
+//         phone: user.phone,
+//       },
+//       token,
+//     }, 'Login successful');
+//   } catch (err) {
+//     next(err);
+//   }
+// };
+
+exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    const user = await UsersModel.findByEmail(email);
-    if (!user) {
-      throw new AuthenticationError('Invalid email or password');
+    if (!email || !password) {
+      throw new AuthenticationError("Email and password are required");
+    }
+    
+    let account = null;
+    let role = null;
+
+    const userResult = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    if (userResult.rows.length > 0) {
+      account = userResult.rows[0];
+      role = "user";
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    if (!account) {
+      const providerResult = await pool.query("SELECT * FROM providers WHERE email = $1", [email]);
+      if (providerResult.rows.length > 0) {
+        account = providerResult.rows[0];
+        role = "provider";
+      }
+    }
+
+    if (!account) {
+      throw new AuthenticationError("Invalid email or password");
+    }
+
+    const isMatch = await bcrypt.compare(password, account.password);
     if (!isMatch) {
-      throw new AuthenticationError('Invalid email or password');
+      throw new AuthenticationError("Invalid email or password");
     }
 
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
+      { id: account.id, email: account.email, role },
       "a3f9b0e1a8c2d34e5f67b89a0c1d2e3f4a5b6c7d8e9f00112233445566778899",
       { expiresIn: "1h" }
-      );
+    );
 
-    // const token = jwt.sign(
-    // { adminId: admin.id, email: admin.email },
-    //   "a3f9b0e1a8c2d34e5f67b89a0c1d2e3f4a5b6c7d8e9f00112233445566778899",
-    //   { expiresIn: "1h" }
-    // );
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "Lax",
+      path: "/",
+      maxAge: 60 * 60 * 1000,
+    });
 
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: true,          
-        sameSite: "Lax",       
-        path: "/",             
-        maxAge: 60 * 60 * 1000
-      });
+    const redirectUrl =
+      role === "provider"
+        ? "/provider/dashboard"
+        : "/user/dashboard";
 
-    successResponse(res, {
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
+    successResponse(
+      res,
+      {
+        id: account.id,
+        name: account.name,
+        email: account.email,
+        role,
+        redirectUrl,
+        token,
       },
-      token,
-    }, 'Login successful');
+      "Login successful"
+    );
   } catch (err) {
     next(err);
   }
