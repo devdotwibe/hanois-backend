@@ -124,10 +124,6 @@ exports.updateSingleBanner = async (req, res, next) => {
       engdescription,
       arabtitle,
       arabdescription,
-      engtitle_ar,
-      engdescription_ar,
-      arabtitle_ar,
-      arabdescription_ar,
     } = req.body;
 
     let post = await PostModel.findByName("home_banner");
@@ -140,13 +136,13 @@ exports.updateSingleBanner = async (req, res, next) => {
       banner_en = await BannerModel.updateById(banner_en.id, {
         engtitle,
         engdescription,
-        arabtitle,
-        arabdescription,
+        engtitle,
+        engdescription,
       });
     } else {
       banner_en = await BannerModel.create({
-        engtitle,
-        engdescription,
+        arabtitle,
+        arabdescription,
         arabtitle,
         arabdescription,
         language: "en",
@@ -156,18 +152,20 @@ exports.updateSingleBanner = async (req, res, next) => {
 
     let banner_ar = await BannerModel.findByPostAndLang(post.id, "ar");
     if (banner_ar) {
+
       banner_ar = await BannerModel.updateById(banner_ar.id, {
-        engtitle: engtitle_ar,
-        engdescription: engdescription_ar,
-        arabtitle: arabtitle_ar,
-        arabdescription: arabdescription_ar,
+        engtitle: arabtitle,
+        engdescription: arabdescription,
+        arabtitle: arabtitle,
+        arabdescription: arabdescription,
       });
+
     } else {
       banner_ar = await BannerModel.create({
-        engtitle: engtitle_ar,
-        engdescription: engdescription_ar,
-        arabtitle: arabtitle_ar,
-        arabdescription: arabdescription_ar,
+        engtitle: arabtitle,
+        engdescription: arabdescription,
+        arabtitle: arabtitle,
+        arabdescription: arabdescription,
         language: "ar",
         post_id: post.id,
       });
