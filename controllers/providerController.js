@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const { successResponse, errorResponse } = require('../utils/response');
 const { ValidationError, AuthenticationError, ConflictError } = require('../utils/errors');
+const { config } = require('../config/env');
 
 exports.registerProvider = async (req, res, next) => {
   try {
@@ -29,6 +30,28 @@ exports.registerProvider = async (req, res, next) => {
       website,
       social_media
     });
+
+      
+    //    const registrationHtml = `
+    //     <div style="font-family: Arial, sans-serif; padding: 20px;">
+    //         <h2 style="color: #28a745;">Success!</h2>
+    //         <p>
+    //         Thank you for registering at <b>Hands</b>. Verification process
+    //         might take some time. You will receive an email once approved.
+    //         </p>
+    //         <hr />
+    //         <p><strong>Registered Email:</strong> ${email}</p>
+    //         <p><strong>Business Name:</strong> ${name}</p>
+    //         <br/>
+    //         <p>Best regards,<br><strong>${config.mail.fromName || "Hands Support Team"}</strong></p>
+    //     </div>
+    //     `;
+
+    //     await sendMail({
+    //     to: email,
+    //     subject: "Registration Successful - Hands Provider",
+    //     html: registrationHtml,
+    //     });
 
     successResponse(
       res,
