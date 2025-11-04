@@ -117,7 +117,6 @@ exports.deleteBanner = async (req, res, next) => {
   }
 };
 
-// 🟩 Update the “home_banner” (used by /update-single)
 exports.updateSingleBanner = async (req, res, next) => {
   try {
     const {
@@ -131,13 +130,11 @@ exports.updateSingleBanner = async (req, res, next) => {
       arabdescription_ar,
     } = req.body;
 
-    // 🟩 Ensure home_banner post exists
     let post = await PostModel.findByName("home_banner");
     if (!post) {
       post = await PostModel.create({ name: "home_banner" });
     }
 
-    // 🟩 English banner
     let banner_en = await BannerModel.findByPostAndLang(post.id, "en");
     if (banner_en) {
       banner_en = await BannerModel.updateById(banner_en.id, {
@@ -157,7 +154,6 @@ exports.updateSingleBanner = async (req, res, next) => {
       });
     }
 
-    // 🟩 Arabic banner
     let banner_ar = await BannerModel.findByPostAndLang(post.id, "ar");
     if (banner_ar) {
       banner_ar = await BannerModel.updateById(banner_ar.id, {
