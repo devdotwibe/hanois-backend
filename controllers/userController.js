@@ -125,7 +125,7 @@ exports.login = async (req, res, next) => {
 
     const isMatch = await bcrypt.compare(password, account.password);
     if (!isMatch) {
-      throw new AuthenticationError("Invalid email or password");
+      throw new AuthenticationError("Invalid email or password",account.password);
     }
 
     const token = jwt.sign(
