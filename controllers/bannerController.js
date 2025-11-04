@@ -8,25 +8,16 @@ exports.createBanner = async (req, res, next) => {
   try {
     const {
       engtitle,
-      engdescription,
       arabtitle,
+      engdescription,
       arabdescription,
-      engtitle_ar,
-      engdescription_ar,
-      arabtitle_ar,
-      arabdescription_ar,
     } = req.body;
 
-    // Validate required fields
     if (
       !engtitle ||
       !engdescription ||
       !arabtitle ||
-      !arabdescription ||
-      !engtitle_ar ||
-      !engdescription_ar ||
-      !arabtitle_ar ||
-      !arabdescription_ar
+      !arabdescription 
     ) {
       throw new ValidationError("All English and Arabic banner fields are required");
     }
@@ -37,7 +28,6 @@ exports.createBanner = async (req, res, next) => {
       post = await PostModel.create({ name: "home_banner" });
     }
 
-    // 🟩 English banner: update or create
     let banner_en = await BannerModel.findByPostAndLang(post.id, "en");
     if (banner_en) {
       banner_en = await BannerModel.updateById(banner_en.id, {
@@ -57,7 +47,6 @@ exports.createBanner = async (req, res, next) => {
       });
     }
 
-    // 🟩 Arabic banner: update or create
     let banner_ar = await BannerModel.findByPostAndLang(post.id, "ar");
     if (banner_ar) {
       banner_ar = await BannerModel.updateById(banner_ar.id, {
@@ -83,7 +72,6 @@ exports.createBanner = async (req, res, next) => {
   }
 };
 
-// 🟩 Get all banners
 exports.getBanners = async (req, res, next) => {
   try {
     const banners = await BannerModel.getAll();
