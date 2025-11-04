@@ -5,6 +5,7 @@ const { config } = require('../config/env');
 const { successResponse, errorResponse } = require('../utils/response');
 const { ValidationError, AuthenticationError, ConflictError } = require('../utils/errors');
 const { validateEmail } = require('../utils/validateEmail');
+const pool = require("../db/pool");
 
 exports.registerUser = async (req, res, next) => {
   try {
@@ -100,7 +101,7 @@ exports.login = async (req, res, next) => {
     if (!email || !password) {
       throw new AuthenticationError("Email and password are required");
     }
-    
+
     let account = null;
     let role = null;
 
