@@ -3,7 +3,7 @@ const PostModel = require("../models/PostModel");
 const { successResponse } = require("../utils/response");
 const { ValidationError, NotFoundError } = require("../utils/errors");
 
-// 🟩 Create or Update (Smart Upsert)
+// 🟩 Create FAQ (multiple entries allowed)
 exports.createFaq = async (req, res, next) => {
   try {
     const { engtitle, engquestion, enganswer, arabtitle, arabquestion, arabanswer } = req.body;
@@ -19,41 +19,27 @@ exports.createFaq = async (req, res, next) => {
       post = await PostModel.create({ name: "faq_content" });
     }
 
-    // 🟩 English FAQ
-    let faq_en = await FaqModel.findByPostAndLang(post.id, "en");
-    const enData = {
+    // 🟩 Always create a NEW English FAQ
+    const faq_en = await FaqModel.create({
       title: engtitle,
       question: engquestion,
       answer: enganswer,
       language: "en",
       post_name: post.name,
       post_id: post.id,
-    };
+    });
 
-    if (faq_en) {
-      faq_en = await FaqModel.updateById(faq_en.id, enData);
-    } else {
-      faq_en = await FaqModel.create(enData);
-    }
-
-    // 🟩 Arabic FAQ
-    let faq_ar = await FaqModel.findByPostAndLang(post.id, "ar");
-    const arData = {
+    // 🟩 Always create a NEW Arabic FAQ
+    const faq_ar = await FaqModel.create({
       title: arabtitle,
       question: arabquestion,
       answer: arabanswer,
       language: "ar",
       post_name: post.name,
       post_id: post.id,
-    };
+    });
 
-    if (faq_ar) {
-      faq_ar = await FaqModel.updateById(faq_ar.id, arData);
-    } else {
-      faq_ar = await FaqModel.create(arData);
-    }
-
-    successResponse(res, { faq_en, faq_ar }, "FAQ created or updated successfully", 201);
+    successResponse(res, { faq_en, faq_ar }, "FAQ created successfully", 201);
   } catch (err) {
     next(err);
   }
