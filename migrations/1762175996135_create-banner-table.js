@@ -10,12 +10,7 @@ exports.up = (pgm) => {
     engdescription: { type: "text", notNull: true },
     arabtitle: { type: "text", notNull: true },
     arabdescription: { type: "text", notNull: true },
-    post_id: {
-      type: "integer",
-      references: "post(id)",
-      onDelete: "CASCADE",
-      onUpdate: "CASCADE",
-    },
+    post_id: { type: "integer" }, 
     language: { type: "text", notNull: true, default: "en" },
     englishheading1: { type: "varchar(255)", notNull: false },
     englishheading2: { type: "varchar(255)", notNull: false },
