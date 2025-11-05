@@ -8,17 +8,21 @@ exports.createBanner = async (req, res, next) => {
   try {
     const {
       engtitle,
-      arabtitle,
       engdescription,
+      arabtitle,
       arabdescription,
+      englishheading1,
+      englishheading2,
+      englishheading3,
+      arabicheading1,
+      arabicheading2,
+      arabicheading3,
+      image1,
+      image2,
+      image3,
     } = req.body;
 
-    if (
-      !engtitle ||
-      !engdescription ||
-      !arabtitle ||
-      !arabdescription 
-    ) {
+    if (!engtitle || !engdescription || !arabtitle || !arabdescription) {
       throw new ValidationError("All English and Arabic banner fields are required");
     }
 
@@ -28,42 +32,56 @@ exports.createBanner = async (req, res, next) => {
       post = await PostModel.create({ name: "home_banner" });
     }
 
+    // 🟩 Handle English banner
     let banner_en = await BannerModel.findByPostAndLang(post.id, "en");
+    const enData = {
+      engtitle,
+      engdescription,
+      arabtitle,
+      arabdescription,
+      englishheading1,
+      englishheading2,
+      englishheading3,
+      arabicheading1,
+      arabicheading2,
+      arabicheading3,
+      image1,
+      image2,
+      image3,
+      language: "en",
+      post_id: post.id,
+    };
+
     if (banner_en) {
-      banner_en = await BannerModel.updateById(banner_en.id, {
-        engtitle,
-        engdescription,
-        arabtitle,
-        arabdescription,
-      });
+      banner_en = await BannerModel.updateById(banner_en.id, enData);
     } else {
-      banner_en = await BannerModel.create({
-        engtitle,
-        engdescription,
-        arabtitle,
-        arabdescription,
-        language: "en",
-        post_id: post.id,
-      });
+      banner_en = await BannerModel.create(enData);
     }
 
+    // 🟩 Handle Arabic banner
     let banner_ar = await BannerModel.findByPostAndLang(post.id, "ar");
+    const arData = {
+      engtitle: arabtitle, // optional mapping
+      engdescription: arabdescription,
+      arabtitle,
+      arabdescription,
+      englishheading1,
+      englishheading2,
+      englishheading3,
+      arabicheading1,
+      arabicheading2,
+      arabicheading3,
+      image1,
+      image2,
+      image3,
+      language: "ar",
+      post_id: post.id,
+    };
+
     if (banner_ar) {
-      banner_ar = await BannerModel.updateById(banner_ar.id, {
-        engtitle: engtitle,
-        engdescription: engdescription,
-        arabtitle: engtitle,
-        arabdescription: arabdescription,
-      });
+      banner_ar = await BannerModel.updateById(banner_ar.id, arData);
     } else {
-      banner_ar = await BannerModel.create({
-        engtitle: arabtitle,
-        engdescription: arabdescription,
-        arabtitle: arabtitle,
-        arabdescription: arabdescription,
-        language: "ar",
-        post_id: post.id,
-      });
+      banner_ar = await BannerModel.create(arData);
     }
 
     successResponse(res, { banner_en, banner_ar }, "Banners created or updated successfully", 201);
@@ -72,6 +90,7 @@ exports.createBanner = async (req, res, next) => {
   }
 };
 
+// 🟩 Get all banners
 exports.getBanners = async (req, res, next) => {
   try {
     const banners = await BannerModel.getAll();
@@ -117,6 +136,7 @@ exports.deleteBanner = async (req, res, next) => {
   }
 };
 
+// 🟩 Update Single Banner (for homepage updates)
 exports.updateSingleBanner = async (req, res, next) => {
   try {
     const {
@@ -124,51 +144,73 @@ exports.updateSingleBanner = async (req, res, next) => {
       engdescription,
       arabtitle,
       arabdescription,
+      englishheading1,
+      englishheading2,
+      englishheading3,
+      arabicheading1,
+      arabicheading2,
+      arabicheading3,
+      image1,
+      image2,
+      image3,
     } = req.body;
 
+    // Ensure post exists
     let post = await PostModel.findByName("home_banner");
     if (!post) {
       post = await PostModel.create({ name: "home_banner" });
     }
 
+    // English banner
     let banner_en = await BannerModel.findByPostAndLang(post.id, "en");
+    const enData = {
+      engtitle,
+      engdescription,
+      arabtitle,
+      arabdescription,
+      englishheading1,
+      englishheading2,
+      englishheading3,
+      arabicheading1,
+      arabicheading2,
+      arabicheading3,
+      image1,
+      image2,
+      image3,
+      language: "en",
+      post_id: post.id,
+    };
+
     if (banner_en) {
-      banner_en = await BannerModel.updateById(banner_en.id, {
-        engtitle,
-        engdescription,
-        engtitle,
-        engdescription,
-      });
+      banner_en = await BannerModel.updateById(banner_en.id, enData);
     } else {
-      banner_en = await BannerModel.create({
-        arabtitle,
-        arabdescription,
-        arabtitle,
-        arabdescription,
-        language: "en",
-        post_id: post.id,
-      });
+      banner_en = await BannerModel.create(enData);
     }
 
+    // Arabic banner
     let banner_ar = await BannerModel.findByPostAndLang(post.id, "ar");
+    const arData = {
+      engtitle: arabtitle,
+      engdescription: arabdescription,
+      arabtitle,
+      arabdescription,
+      englishheading1,
+      englishheading2,
+      englishheading3,
+      arabicheading1,
+      arabicheading2,
+      arabicheading3,
+      image1,
+      image2,
+      image3,
+      language: "ar",
+      post_id: post.id,
+    };
+
     if (banner_ar) {
-
-      banner_ar = await BannerModel.updateById(banner_ar.id, {
-        engtitle: arabtitle,
-        engdescription: arabdescription,
-        arabtitle: arabtitle,
-        arabdescription: arabdescription,
-      });
-
+      banner_ar = await BannerModel.updateById(banner_ar.id, arData);
     } else {
-      banner_ar = await BannerModel.create({
-        engtitle: arabtitle,
-        engdescription: arabdescription,
-        arabtitle: arabtitle,
-        arabdescription: arabdescription,
-        language: "ar",
-        post_id: post.id,
-      });
+      banner_ar = await BannerModel.create(arData);
     }
 
     successResponse(res, { banner_en, banner_ar }, "Banners updated successfully", 200);

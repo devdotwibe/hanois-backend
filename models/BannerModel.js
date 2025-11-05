@@ -10,6 +10,15 @@ class BannerModel {
         b.engdescription, 
         b.arabtitle, 
         b.arabdescription, 
+        b.englishheading1,
+        b.englishheading2,
+        b.englishheading3,
+        b.arabicheading1,
+        b.arabicheading2,
+        b.arabicheading3,
+        b.image1,
+        b.image2,
+        b.image3,
         b.language,
         b.post_id,
         p.name AS post_name,
@@ -29,18 +38,57 @@ class BannerModel {
       engdescription,
       arabtitle,
       arabdescription,
+      englishheading1,
+      englishheading2,
+      englishheading3,
+      arabicheading1,
+      arabicheading2,
+      arabicheading3,
+      image1,
+      image2,
+      image3,
       post_id,
       language = "en",
     } = data;
 
     const result = await pool.query(
       `INSERT INTO banner (
-        engtitle, engdescription, arabtitle, arabdescription, post_id, language, created_at, updated_at
+        engtitle, engdescription, arabtitle, arabdescription,
+        englishheading1, englishheading2, englishheading3,
+        arabicheading1, arabicheading2, arabicheading3,
+        image1, image2, image3,
+        post_id, language, created_at, updated_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+      VALUES (
+        $1,$2,$3,$4,
+        $5,$6,$7,
+        $8,$9,$10,
+        $11,$12,$13,
+        $14,$15,NOW(),NOW()
+      )
       RETURNING 
-        id, engtitle, engdescription, arabtitle, arabdescription, post_id, language, created_at, updated_at`,
-      [engtitle, engdescription, arabtitle, arabdescription, post_id, language]
+        id, engtitle, engdescription, arabtitle, arabdescription,
+        englishheading1, englishheading2, englishheading3,
+        arabicheading1, arabicheading2, arabicheading3,
+        image1, image2, image3,
+        post_id, language, created_at, updated_at`,
+      [
+        engtitle,
+        engdescription,
+        arabtitle,
+        arabdescription,
+        englishheading1,
+        englishheading2,
+        englishheading3,
+        arabicheading1,
+        arabicheading2,
+        arabicheading3,
+        image1,
+        image2,
+        image3,
+        post_id,
+        language,
+      ]
     );
 
     return result.rows[0];
@@ -52,7 +100,10 @@ class BannerModel {
 
     const result = await pool.query(
       `SELECT 
-        b.id, b.engtitle, b.engdescription, b.arabtitle, b.arabdescription, 
+        b.id, b.engtitle, b.engdescription, b.arabtitle, b.arabdescription,
+        b.englishheading1, b.englishheading2, b.englishheading3,
+        b.arabicheading1, b.arabicheading2, b.arabicheading3,
+        b.image1, b.image2, b.image3,
         b.language, b.post_id, p.name AS post_name,
         b.created_at, b.updated_at
        FROM banner b
@@ -85,6 +136,15 @@ class BannerModel {
       "engdescription",
       "arabtitle",
       "arabdescription",
+      "englishheading1",
+      "englishheading2",
+      "englishheading3",
+      "arabicheading1",
+      "arabicheading2",
+      "arabicheading3",
+      "image1",
+      "image2",
+      "image3",
       "post_id",
       "language",
     ];
@@ -98,7 +158,6 @@ class BannerModel {
 
     if (fields.length === 0) return null;
 
-    // Always update timestamp
     fields.push(`updated_at = NOW()`);
     values.push(id);
 
@@ -106,7 +165,11 @@ class BannerModel {
       `UPDATE banner 
        SET ${fields.join(", ")} 
        WHERE id = $${paramIndex}
-       RETURNING id, engtitle, engdescription, arabtitle, arabdescription, post_id, language, created_at, updated_at`,
+       RETURNING id, engtitle, engdescription, arabtitle, arabdescription,
+                 englishheading1, englishheading2, englishheading3,
+                 arabicheading1, arabicheading2, arabicheading3,
+                 image1, image2, image3,
+                 post_id, language, created_at, updated_at`,
       values
     );
 
@@ -122,69 +185,6 @@ class BannerModel {
       [id]
     );
     return result.rows[0];
-  }
-
-  // 🟩 Update first banner (if needed for fallback)
-  static async updateSingle(data) {
-    const fields = [];
-    const values = [];
-    let paramIndex = 1;
-
-    const updatableFields = [
-      "engtitle",
-      "engdescription",
-      "arabtitle",
-      "arabdescription",
-      "post_id",
-      "language",
-    ];
-
-    for (const key of updatableFields) {
-      if (data[key] !== undefined) {
-        fields.push(`${key} = $${paramIndex++}`);
-        values.push(data[key]);
-      }
-    }
-
-    if (fields.length === 0) return null;
-
-    fields.push(`updated_at = NOW()`);
-
-    const result = await pool.query(
-      `UPDATE banner 
-       SET ${fields.join(", ")}
-       WHERE id = (SELECT id FROM banner ORDER BY created_at ASC LIMIT 1)
-       RETURNING id, engtitle, engdescription, arabtitle, arabdescription, post_id, language, created_at, updated_at`,
-      values
-    );
-
-    return result.rows[0];
-  }
-
-  // 🟩 Update both English and Arabic banners (helper)
-  static async updateEnglishAndArabic(data) {
-    const { engtitle, engdescription, arabtitle_ar, arabdescription_ar } = data;
-
-    const enResult = await pool.query(
-      `UPDATE banner
-       SET engtitle = $1, engdescription = $2, updated_at = NOW()
-       WHERE language = 'en'
-       RETURNING *`,
-      [engtitle, engdescription]
-    );
-
-    const arResult = await pool.query(
-      `UPDATE banner
-       SET arabtitle = $1, arabdescription = $2, updated_at = NOW()
-       WHERE language = 'ar'
-       RETURNING *`,
-      [arabtitle_ar, arabdescription_ar]
-    );
-
-    return {
-      english: enResult.rows[0],
-      arabic: arResult.rows[0],
-    };
   }
 }
 
