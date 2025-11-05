@@ -44,3 +44,43 @@ exports.createPage = async (req, res, next) => {
     next(err);
   }
 };
+
+
+
+exports.getListed = async (req, res, next) => {
+  try {
+    const { sectionKey } = req.query;
+    if (!sectionKey) {
+      throw new ValidationError("sectionKey is required");
+    }
+
+    const section = await SectionModel.findByKey(sectionKey);
+    if (!section) {
+      return successResponse(res, {}, "Section not found");
+    }
+
+    const titleField = await FieldModel.findBySectionAndKey(section.id, "title");
+    const contentField = await FieldModel.findBySectionAndKey(section.id, "content");
+
+    const title_en = titleField
+      ? (await FieldTranslationModel.find(titleField.id, "en"))?.value || ""
+      : "";
+    const title_ar = titleField
+      ? (await FieldTranslationModel.find(titleField.id, "ar"))?.value || ""
+      : "";
+    const content_en = contentField
+      ? (await FieldTranslationModel.find(contentField.id, "en"))?.value || ""
+      : "";
+    const content_ar = contentField
+      ? (await FieldTranslationModel.find(contentField.id, "ar"))?.value || ""
+      : "";
+
+    successResponse(
+      res,
+      { title_en, title_ar, content_en, content_ar },
+      "Section fetched successfully"
+    );
+  } catch (err) {
+    next(err);
+  }
+};
