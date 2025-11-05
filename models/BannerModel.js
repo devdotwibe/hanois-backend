@@ -17,6 +17,9 @@ class BannerModel {
         b.language,
         b.post_name,
         b.post_id,
+        b.subtitle,
+        b.subheading,
+        b.buttonname,
         p.name AS post_display_name
       FROM banner b
       LEFT JOIN post p ON b.post_id = p.id
@@ -39,17 +42,22 @@ class BannerModel {
       language = "en",
       post_name,
       post_id,
+      subtitle,
+      subheading,
+      buttonname,
     } = data;
 
     const result = await pool.query(
       `INSERT INTO banner (
         title, description, heading1, heading2, heading3,
-        image1, image2, image3, language, post_name, post_id
+        image1, image2, image3, language, post_name, post_id,
+        subtitle, subheading, buttonname
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
       RETURNING 
         id, title, description, heading1, heading2, heading3,
-        image1, image2, image3, language, post_name, post_id`,
+        image1, image2, image3, language, post_name, post_id,
+        subtitle, subheading, buttonname`,
       [
         title,
         description,
@@ -62,6 +70,9 @@ class BannerModel {
         language,
         post_name,
         post_id,
+        subtitle,
+        subheading,
+        buttonname,
       ]
     );
 
@@ -86,6 +97,9 @@ class BannerModel {
         b.language,
         b.post_name,
         b.post_id,
+        b.subtitle,
+        b.subheading,
+        b.buttonname,
         p.name AS post_display_name
       FROM banner b
       LEFT JOIN post p ON b.post_id = p.id
@@ -125,6 +139,9 @@ class BannerModel {
       "language",
       "post_name",
       "post_id",
+      "subtitle",
+      "subheading",
+      "buttonname",
     ];
 
     for (const key of updatableFields) {
@@ -140,11 +157,12 @@ class BannerModel {
 
     const result = await pool.query(
       `UPDATE banner 
-       SET ${fields.join(", ")} 
+       SET ${fields.join(", ")}, updated_at = NOW()
        WHERE id = $${paramIndex}
        RETURNING 
         id, title, description, heading1, heading2, heading3,
-        image1, image2, image3, language, post_name, post_id`,
+        image1, image2, image3, language, post_name, post_id,
+        subtitle, subheading, buttonname`,
       values
     );
 
