@@ -120,12 +120,12 @@ exports.login = async (req, res, next) => {
     }
 
     if (!account) {
-      throw new AuthenticationError("Invalid email or password test 3",account.email);
+      throw new AuthenticationError("Invalid email or password");
     }
 
     const isMatch = await bcrypt.compare(password, account.password);
     if (!isMatch) {
-      throw new AuthenticationError("Invalid email or password test",account.email);
+      throw new AuthenticationError("Invalid email or password");
     }
 
     const token = jwt.sign(
