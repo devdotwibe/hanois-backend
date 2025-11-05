@@ -6,7 +6,7 @@ const {
 } = require("../controllers/PageController");
 
 
-router.post("/", createPage);
+router.post("/save", createPage);
 
 
 module.exports = router;
