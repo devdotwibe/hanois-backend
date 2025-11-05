@@ -149,7 +149,6 @@ exports.login = async (req, res, next) => {
 
     successResponse(
       res,
-      token, 
       {
         id: account.id,
         name: account.name,
@@ -178,7 +177,7 @@ exports.deleteUser = async (req, res, next) => {
     await pool.query('DELETE FROM users WHERE id = $1', [id]);
 
     successResponse(res, null, 'User deleted successfully');
-
+    
   } catch (err) {
   
     next(new DatabaseError('Failed to delete user'));

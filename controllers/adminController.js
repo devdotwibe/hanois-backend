@@ -65,6 +65,7 @@ exports.loginAdmin = async (req, res, next) => {
           id: admin.id,
           name: admin.name,
           email: admin.email,
+          token,
         },
       },
       "Login successful"
