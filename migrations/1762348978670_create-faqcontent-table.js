@@ -6,9 +6,9 @@ exports.up = (pgm) => {
   pgm.createTable("faqcontent", {
     id: "id",
     title: { type: "varchar(255)", notNull: true },
-    question: { type: "text", notNull: true },
-    answer: { type: "text", notNull: true },
-    language: { type: "varchar(10)", notNull: true, default: "en" }, // optional multi-language support
+    question: { type: "text", notNull: false },
+    answer: { type: "text", notNull: false },
+    language: { type: "varchar(10)", notNull: false, default: "en" }, // optional multi-language support
     post_name: { type: "varchar(255)" },
     post_id: { type: "integer" },
     created_at: {
