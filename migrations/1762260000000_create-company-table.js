@@ -20,7 +20,7 @@ exports.up = (pgm) => {
     team_size: { type: 'integer' },
     service: { type: 'text' },
     website: { type: 'varchar(255)' },
-    social_media: { type: 'jsonb', default: '{}' },
+    social_media: { type: 'varchar(255)' },
     created_at: { type: 'timestamp', default: pgm.func('current_timestamp') },
   });
 };
