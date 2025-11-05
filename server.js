@@ -1,6 +1,6 @@
 const { validateEnv, config } = require('./config/env');
 validateEnv();
-
+const path = require('path');  
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -24,6 +24,7 @@ const port = config.port;
 app.use(morgan(config.nodeEnv === 'development' ? 'dev' : 'combined'));
 
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(
   cors({

@@ -150,10 +150,20 @@ exports.updateSingleBanner = async (req, res, next) => {
       arabicheading1,
       arabicheading2,
       arabicheading3,
-      image1,
-      image2,
-      image3,
     } = req.body;
+
+    // Uploaded files: req.files is an object { image1: [file], image2: [file], image3: [file] }
+    const files = req.files || {};
+
+    // Helper to get public path or fallback to req.body if no upload
+    const getImagePath = (fieldName) => {
+      if (files[fieldName] && files[fieldName][0]) {
+        // Assuming your server serves /public as root, e.g., http://domain.com/banner/filename.jpg
+        return `/banner/${files[fieldName][0].filename}`;
+      }
+      // fallback to old URL in req.body
+      return req.body[fieldName] || "";
+    };
 
     // Ensure post exists
     let post = await PostModel.findByName("home_banner");
@@ -161,7 +171,7 @@ exports.updateSingleBanner = async (req, res, next) => {
       post = await PostModel.create({ name: "home_banner" });
     }
 
-    // English banner
+    // Prepare English banner data
     let banner_en = await BannerModel.findByPostAndLang(post.id, "en");
     const enData = {
       engtitle,
@@ -174,9 +184,9 @@ exports.updateSingleBanner = async (req, res, next) => {
       arabicheading1,
       arabicheading2,
       arabicheading3,
-      image1,
-      image2,
-      image3,
+      image1: getImagePath("image1"),
+      image2: getImagePath("image2"),
+      image3: getImagePath("image3"),
       language: "en",
       post_id: post.id,
     };
@@ -187,7 +197,7 @@ exports.updateSingleBanner = async (req, res, next) => {
       banner_en = await BannerModel.create(enData);
     }
 
-    // Arabic banner
+    // Prepare Arabic banner data
     let banner_ar = await BannerModel.findByPostAndLang(post.id, "ar");
     const arData = {
       engtitle: arabtitle,
@@ -200,9 +210,9 @@ exports.updateSingleBanner = async (req, res, next) => {
       arabicheading1,
       arabicheading2,
       arabicheading3,
-      image1,
-      image2,
-      image3,
+      image1: getImagePath("image1"),
+      image2: getImagePath("image2"),
+      image3: getImagePath("image3"),
       language: "ar",
       post_id: post.id,
     };
