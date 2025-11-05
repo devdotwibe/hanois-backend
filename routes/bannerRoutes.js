@@ -45,7 +45,13 @@ router.param("id", (req, res, next, id) => {
   next();
 });
 
-// 🟩 Banner routes
+/* ============================
+   🟩 ROUTE ORDER MATTERS
+   ============================ */
+
+// ✅ 1️⃣ Routes that DO NOT use ":id" (must come FIRST)
+router.get("/", getBanners);
+
 router.post(
   "/",
   upload.fields([
@@ -55,8 +61,6 @@ router.post(
   ]),
   createBanner
 );
-
-router.get("/", getBanners);
 
 router.put(
   "/update-single",
@@ -68,11 +72,11 @@ router.put(
   updateSingleBanner
 );
 
-// 🟩 NEW: Tab 2 API endpoints (for subtitle, subheading, buttonname)
+// ✅ 2️⃣ New routes for Tab 2 extras
 router.put("/update-extras", updateBannerExtras);
-router.get("/extras", getBannerExtras); // optional GET route for frontend to fetch just the extras
+router.get("/extras", getBannerExtras);
 
-// 🟩 Other CRUD routes
+// ✅ 3️⃣ Generic CRUD routes (must always be last)
 router.get("/:id", getBannerById);
 router.put("/:id", updateBanner);
 router.delete("/:id", deleteBanner);
