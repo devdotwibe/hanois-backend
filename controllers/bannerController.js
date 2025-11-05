@@ -300,3 +300,171 @@ exports.getBannerExtras = async (req, res, next) => {
     next(err);
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+// 🟩 Update Banner Extras (subtitle, subheading, buttonname)
+exports.updateBannerExtras = async (req, res, next) => {
+  try {
+    const {
+      subtitle,
+      subheading,
+      buttonname,
+      arabicsubtitle,
+      arabicsubheading,
+      arabicbuttonname,
+    } = req.body;
+
+    // Find or create "home_banner" post
+    let post = await PostModel.findByName("home_banner");
+    if (!post) post = await PostModel.create({ name: "home_banner" });
+
+    // 🟩 English Banner
+    let banner_en = await BannerModel.findByPostAndLang(post.id, "en");
+    const enData = {
+      subtitle,
+      subheading,
+      buttonname,
+      language: "en",
+      post_id: post.id,
+      post_name: post.name,
+    };
+
+    if (banner_en) {
+      banner_en = await BannerModel.updateById(banner_en.id, enData);
+    } else {
+      banner_en = await BannerModel.create(enData);
+    }
+
+    // 🟩 Arabic Banner
+    let banner_ar = await BannerModel.findByPostAndLang(post.id, "ar");
+    const arData = {
+      subtitle: arabicsubtitle,
+      subheading: arabicsubheading,
+      buttonname: arabicbuttonname,
+      language: "ar",
+      post_id: post.id,
+      post_name: post.name,
+    };
+
+    if (banner_ar) {
+      banner_ar = await BannerModel.updateById(banner_ar.id, arData);
+    } else {
+      banner_ar = await BannerModel.create(arData);
+    }
+
+    successResponse(res, { banner_en, banner_ar }, "Banner extras updated successfully", 200);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 🟩 Get only Banner Extras (for Tab 2 fetch)
+exports.getBannerExtras = async (req, res, next) => {
+  try {
+    const banners = await BannerModel.getAll();
+    const en = banners.find((b) => b.language === "en") || {};
+    const ar = banners.find((b) => b.language === "ar") || {};
+
+    const extras = {
+      subtitle: en.subtitle || "",
+      subheading: en.subheading || "",
+      buttonname: en.buttonname || "",
+      arabicsubtitle: ar.subtitle || "",
+      arabicsubheading: ar.subheading || "",
+      arabicbuttonname: ar.buttonname || "",
+    };
+
+    successResponse(res, { extras }, "Banner extras fetched successfully", 200);
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+// 🟩 Update Banner Sub Extras (subdescription, subbuttonname)
+exports.updateBannerSubExtras = async (req, res, next) => {
+  try {
+    const {
+      subdescription,
+      subbuttonname,
+      arabicsubdescription,
+      arabicsubbuttonname,
+    } = req.body;
+
+    // Find or create the "home_banner" post
+    let post = await PostModel.findByName("home_banner");
+    if (!post) post = await PostModel.create({ name: "home_banner" });
+
+    // 🟩 English Banner Sub Extras
+    let banner_en = await BannerModel.findByPostAndLang(post.id, "en");
+    const enData = {
+      subdescription,
+      subbuttonname,
+      language: "en",
+      post_id: post.id,
+      post_name: post.name,
+    };
+
+    banner_en
+      ? (banner_en = await BannerModel.updateById(banner_en.id, enData))
+      : (banner_en = await BannerModel.create(enData));
+
+    // 🟩 Arabic Banner Sub Extras
+    let banner_ar = await BannerModel.findByPostAndLang(post.id, "ar");
+    const arData = {
+      subdescription: arabicsubdescription,
+      subbuttonname: arabicsubbuttonname,
+      language: "ar",
+      post_id: post.id,
+      post_name: post.name,
+    };
+
+    banner_ar
+      ? (banner_ar = await BannerModel.updateById(banner_ar.id, arData))
+      : (banner_ar = await BannerModel.create(arData));
+
+    successResponse(
+      res,
+      { banner_en, banner_ar },
+      "Banner sub extras updated successfully",
+      200
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 🟩 Get only Banner Sub Extras (for Tab 3 fetch)
+exports.getBannerSubExtras = async (req, res, next) => {
+  try {
+    const banners = await BannerModel.getAll();
+    const en = banners.find((b) => b.language === "en") || {};
+    const ar = banners.find((b) => b.language === "ar") || {};
+
+    const subExtras = {
+      subdescription: en.subdescription || "",
+      subbuttonname: en.subbuttonname || "",
+      arabicsubdescription: ar.subdescription || "",
+      arabicsubbuttonname: ar.subbuttonname || "",
+    };
+
+    successResponse(
+      res,
+      { subExtras },
+      "Banner sub extras fetched successfully",
+      200
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+

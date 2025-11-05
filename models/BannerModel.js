@@ -20,6 +20,8 @@ class BannerModel {
         b.subtitle,
         b.subheading,
         b.buttonname,
+        b.subdescription,
+        b.subbuttonname,
         p.name AS post_display_name
       FROM banner b
       LEFT JOIN post p ON b.post_id = p.id
@@ -45,19 +47,21 @@ class BannerModel {
       subtitle,
       subheading,
       buttonname,
+      subdescription,
+      subbuttonname,
     } = data;
 
     const result = await pool.query(
       `INSERT INTO banner (
         title, description, heading1, heading2, heading3,
         image1, image2, image3, language, post_name, post_id,
-        subtitle, subheading, buttonname
+        subtitle, subheading, buttonname, subdescription, subbuttonname
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
       RETURNING 
         id, title, description, heading1, heading2, heading3,
         image1, image2, image3, language, post_name, post_id,
-        subtitle, subheading, buttonname`,
+        subtitle, subheading, buttonname, subdescription, subbuttonname`,
       [
         title,
         description,
@@ -73,6 +77,8 @@ class BannerModel {
         subtitle,
         subheading,
         buttonname,
+        subdescription,
+        subbuttonname,
       ]
     );
 
@@ -100,6 +106,8 @@ class BannerModel {
         b.subtitle,
         b.subheading,
         b.buttonname,
+        b.subdescription,
+        b.subbuttonname,
         p.name AS post_display_name
       FROM banner b
       LEFT JOIN post p ON b.post_id = p.id
@@ -142,6 +150,8 @@ class BannerModel {
       "subtitle",
       "subheading",
       "buttonname",
+      "subdescription",
+      "subbuttonname",
     ];
 
     for (const key of updatableFields) {
@@ -162,7 +172,7 @@ class BannerModel {
        RETURNING 
         id, title, description, heading1, heading2, heading3,
         image1, image2, image3, language, post_name, post_id,
-        subtitle, subheading, buttonname`,
+        subtitle, subheading, buttonname, subdescription, subbuttonname`,
       values
     );
 
