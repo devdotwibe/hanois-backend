@@ -1,0 +1,13 @@
+exports.shorthands = undefined;
+
+exports.up = (pgm) => {
+    pgm.createTable('home', {
+        id: 'id',
+        name: { type: 'varchar(100)', notNull: true },
+        created_at: { type: 'timestamp', default: pgm.func('current_timestamp') }
+    });
+};
+
+exports.down = (pgm) => {
+    pgm.dropTable('home');
+};
