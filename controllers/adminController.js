@@ -59,7 +59,6 @@ exports.loginAdmin = async (req, res, next) => {
 
     successResponse(
       res,
-      token, 
       {
         admin: {
           id: admin.id,
