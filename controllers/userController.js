@@ -163,3 +163,23 @@ exports.login = async (req, res, next) => {
     next(err);
   }
 };
+
+
+exports.deleteUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+    if (userResult.rows.length === 0) {
+      throw new NotFoundError('User not found');
+    }
+
+    await pool.query('DELETE FROM users WHERE id = $1', [id]);
+
+    successResponse(res, null, 'User deleted successfully');
+    
+  } catch (err) {
+  
+    next(new DatabaseError('Failed to delete user'));
+  }
+};
