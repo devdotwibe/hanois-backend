@@ -48,17 +48,18 @@ exports.loginAdmin = async (req, res, next) => {
     // });
 
     res.cookie("token", token, {
-    httpOnly: true,
-    secure: true,          
-    sameSite: "Lax",       
-    path: "/",             
-    maxAge: 60 * 60 * 1000
+      httpOnly: true,
+      secure: true,          
+      sameSite: "Lax",       
+      path: "/",             
+      maxAge: 60 * 60 * 1000
     });
 
 
 
     successResponse(
       res,
+      token, 
       {
         admin: {
           id: admin.id,
