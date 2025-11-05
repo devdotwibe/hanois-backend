@@ -1,8 +1,5 @@
 const express = require("express");
 const router = express.Router();
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 
 const {
   createBanner,
@@ -11,74 +8,28 @@ const {
   updateBanner,
   updateSingleBanner,
   deleteBanner,
-  updateBannerExtras, // 🟩 new controller for subtitle/subheading/buttonname
-  getBannerExtras,    // 🟩 optional GET endpoint for extras
+  updateBannerExtras, // 🟩 New controller for subtitle/subheading/buttonname
+  getBannerExtras,    // 🟩 New controller for fetching extras
 } = require("../controllers/bannerController");
 
-// 🟩 Multer storage config
-const uploadPath = path.join(__dirname, "../public/banner");
-if (!fs.existsSync(uploadPath)) {
-  fs.mkdirSync(uploadPath, { recursive: true });
-}
+/* ======================================================
+   🟩 ROUTE ORDER IS IMPORTANT IN EXPRESS
+   ====================================================== */
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + "-" + uniqueSuffix + ext);
-  },
-});
+// 1️⃣ SPECIAL ROUTES (MUST COME FIRST)
+router.get("/extras", getBannerExtras);           // Fetch only subtitle/subheading/button fields
+router.put("/update-extras", updateBannerExtras); // Update subtitle/subheading/button fields
 
-const upload = multer({ storage });
+// 2️⃣ REGULAR BANNER ROUTES
+router.post("/", createBanner);     // Create a new banner
+router.get("/", getBanners);        // Get all banners
+router.put("/update-single", updateSingleBanner); // Update Tab 1 banner (with images)
 
-// 🟩 Validate ID param middleware
-router.param("id", (req, res, next, id) => {
-  if (isNaN(id)) {
-    return res.status(400).json({
-      success: false,
-      error: "Invalid ID format — must be numeric",
-    });
-  }
-  next();
-});
+// 3️⃣ ID-BASED ROUTES (MUST COME LAST)
+router.get("/:id(\\d+)", getBannerById);     // Get banner by numeric ID
+router.put("/:id(\\d+)", updateBanner);      // Update banner by numeric ID
+router.delete("/:id(\\d+)", deleteBanner);   // Delete banner by numeric ID
 
-/* ============================
-   🟩 ROUTE ORDER MATTERS
-   ============================ */
-
-// ✅ 1️⃣ Routes that DO NOT use ":id" (must come FIRST)
-router.get("/", getBanners);
-
-router.post(
-  "/",
-  upload.fields([
-    { name: "image1", maxCount: 1 },
-    { name: "image2", maxCount: 1 },
-    { name: "image3", maxCount: 1 },
-  ]),
-  createBanner
-);
-
-router.put(
-  "/update-single",
-  upload.fields([
-    { name: "image1", maxCount: 1 },
-    { name: "image2", maxCount: 1 },
-    { name: "image3", maxCount: 1 },
-  ]),
-  updateSingleBanner
-);
-
-// ✅ 2️⃣ New routes for Tab 2 extras
-router.put("/update-extras", updateBannerExtras);
-router.get("/extras", getBannerExtras);
-
-// ✅ 3️⃣ Generic CRUD routes (must always be last)
-router.get("/:id", getBannerById);
-router.put("/:id", updateBanner);
-router.delete("/:id", deleteBanner);
+// 🟩 (Removed router.param) → using RegExp (\\d+) ensures :id must be numeric automatically
 
 module.exports = router;
