@@ -11,9 +11,11 @@ const {
   updateBanner,
   updateSingleBanner,
   deleteBanner,
+  updateBannerExtras, // 🟩 new controller for subtitle/subheading/buttonname
+  getBannerExtras,    // 🟩 optional GET endpoint for extras
 } = require("../controllers/bannerController");
 
-// Multer storage config
+// 🟩 Multer storage config
 const uploadPath = path.join(__dirname, "../public/banner");
 if (!fs.existsSync(uploadPath)) {
   fs.mkdirSync(uploadPath, { recursive: true });
@@ -32,7 +34,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Validate ID param middleware
+// 🟩 Validate ID param middleware
 router.param("id", (req, res, next, id) => {
   if (isNaN(id)) {
     return res.status(400).json({
@@ -43,7 +45,7 @@ router.param("id", (req, res, next, id) => {
   next();
 });
 
-// Add multer middleware for file upload fields on create and update-single routes
+// 🟩 Banner routes
 router.post(
   "/",
   upload.fields([
@@ -66,6 +68,11 @@ router.put(
   updateSingleBanner
 );
 
+// 🟩 NEW: Tab 2 API endpoints (for subtitle, subheading, buttonname)
+router.put("/update-extras", updateBannerExtras);
+router.get("/extras", getBannerExtras); // optional GET route for frontend to fetch just the extras
+
+// 🟩 Other CRUD routes
 router.get("/:id", getBannerById);
 router.put("/:id", updateBanner);
 router.delete("/:id", deleteBanner);
