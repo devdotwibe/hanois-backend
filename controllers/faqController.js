@@ -9,9 +9,9 @@ exports.createFaq = async (req, res, next) => {
     const { engtitle, engquestion, enganswer, arabtitle, arabquestion, arabanswer } = req.body;
 
     // Validate required fields
-    if (!engtitle || !engquestion || !enganswer || !arabtitle || !arabquestion || !arabanswer) {
-      throw new ValidationError("All English and Arabic FAQ fields are required");
-    }
+    // if (!engtitle || !engquestion || !enganswer || !arabtitle || !arabquestion || !arabanswer) {
+    //   throw new ValidationError("All English and Arabic FAQ fields are required");
+    // }
 
     // Find or create the 'faq_content' post
     let post = await PostModel.findByName("faq_content");
