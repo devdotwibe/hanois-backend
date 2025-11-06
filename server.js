@@ -21,7 +21,7 @@ const pageRoutes = require("./routes/pageRoutes");
 
 const categoryRoutes = require('./routes/categoryRoutes');
 
-const servicesRoutes = require('./routes/serviceRoutes');
+const serviceRoutes = require('./routes/serviceRoutes');
 
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const pool = require('./db/pool');
@@ -62,7 +62,7 @@ app.use("/api/page", pageRoutes);
 
 app.use("/api/categories", categoryRoutes);
 
-app.use("/api/services", servicesRoutes);
+app.use("/api/services", serviceRoutes);
 
 
 app.get('/', (req, res) => {
