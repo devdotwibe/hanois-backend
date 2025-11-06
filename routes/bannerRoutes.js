@@ -31,7 +31,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 /* ======================================================
-   🟩 IMAGE UPLOAD ROUTE
+   🟩 IMAGE UPLOAD ROUTE (Optional)
    ====================================================== */
 // Example: POST /api/banner/upload
 router.post("/upload", upload.single("file"), (req, res) => {
@@ -66,7 +66,17 @@ router.put("/update-subextras", updateBannerSubExtras); // Update sub extras for
    ================================ */
 router.post("/", createBanner);                   // Create new banner (Tab 1)
 router.get("/", getBanners);                      // List all banners
-router.put("/update-single", updateSingleBanner); // Update main banner (Tab 1)
+
+// 🟩 Updated: Accept multiple file uploads
+router.put(
+  "/update-single",
+  upload.fields([
+    { name: "image1", maxCount: 1 },
+    { name: "image2", maxCount: 1 },
+    { name: "image3", maxCount: 1 },
+  ]),
+  updateSingleBanner
+);
 
 /* ================================
    ID-BASED ROUTES (must be last)
