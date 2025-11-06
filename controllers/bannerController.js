@@ -1,11 +1,9 @@
 const BannerModel = require("../models/BannerModel");
 const PostModel = require("../models/PostModel");
 const { successResponse } = require("../utils/response");
-const { ValidationError, NotFoundError } = require("../utils/errors");
+const { ValidationError, NotFoundError } = require("../utils/errors"); 
 
-/* ======================================================
-   🟩 CREATE OR UPDATE BANNER (SMART UPSERT)
-   ====================================================== */
+// 🟩 Create or Update (Smart Upsert)
 exports.createBanner = async (req, res, next) => {
   try {
     const {
@@ -24,14 +22,18 @@ exports.createBanner = async (req, res, next) => {
       image3,
     } = req.body;
 
+    // Validate required fields
     if (!engtitle || !engdescription || !arabtitle || !arabdescription) {
       throw new ValidationError("All English and Arabic banner fields are required");
     }
 
+    // Find or create post entry
     let post = await PostModel.findByName("home_banner");
-    if (!post) post = await PostModel.create({ name: "home_banner" });
+    if (!post) {
+      post = await PostModel.create({ name: "home_banner" });
+    }
 
-    // English Banner
+    // 🟩 English banner
     let banner_en = await BannerModel.findByPostAndLang(post.id, "en");
     const enData = {
       title: engtitle,
@@ -46,11 +48,14 @@ exports.createBanner = async (req, res, next) => {
       post_name: post.name,
       post_id: post.id,
     };
-    banner_en
-      ? (banner_en = await BannerModel.updateById(banner_en.id, enData))
-      : (banner_en = await BannerModel.create(enData));
 
-    // Arabic Banner
+    if (banner_en) {
+      banner_en = await BannerModel.updateById(banner_en.id, enData);
+    } else {
+      banner_en = await BannerModel.create(enData);
+    }
+
+    // 🟩 Arabic banner
     let banner_ar = await BannerModel.findByPostAndLang(post.id, "ar");
     const arData = {
       title: arabtitle,
@@ -65,19 +70,25 @@ exports.createBanner = async (req, res, next) => {
       post_name: post.name,
       post_id: post.id,
     };
-    banner_ar
-      ? (banner_ar = await BannerModel.updateById(banner_ar.id, arData))
-      : (banner_ar = await BannerModel.create(arData));
 
-    successResponse(res, { banner_en, banner_ar }, "Banners created or updated successfully", 201);
+    if (banner_ar) {
+      banner_ar = await BannerModel.updateById(banner_ar.id, arData);
+    } else {
+      banner_ar = await BannerModel.create(arData);
+    }
+
+    successResponse(
+      res,
+      { banner_en, banner_ar },
+      "Banners created or updated successfully",
+      201
+    );
   } catch (err) {
     next(err);
   }
 };
 
-/* ======================================================
-   🟩 GET ALL BANNERS
-   ====================================================== */
+// 🟩 Get all banners
 exports.getBanners = async (req, res, next) => {
   try {
     const banners = await BannerModel.getAll();
@@ -87,9 +98,7 @@ exports.getBanners = async (req, res, next) => {
   }
 };
 
-/* ======================================================
-   🟩 GET SINGLE BANNER BY ID
-   ====================================================== */
+// 🟩 Get single banner by ID
 exports.getBannerById = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -101,9 +110,7 @@ exports.getBannerById = async (req, res, next) => {
   }
 };
 
-/* ======================================================
-   🟩 UPDATE BANNER BY ID
-   ====================================================== */
+// 🟩 Update banner by ID (generic)
 exports.updateBanner = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -115,9 +122,7 @@ exports.updateBanner = async (req, res, next) => {
   }
 };
 
-/* ======================================================
-   🟩 DELETE BANNER
-   ====================================================== */
+// 🟩 Delete banner by ID
 exports.deleteBanner = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -129,13 +134,10 @@ exports.deleteBanner = async (req, res, next) => {
   }
 };
 
-/* ======================================================
-   🟩 UPDATE SINGLE BANNER (for Home Page)
-   ====================================================== */
+// 🟩 Update Single Banner (for homepage updates)
 exports.updateSingleBanner = async (req, res, next) => {
   try {
-    const body = req.body || {};
-    const {
+      const {
       engtitle,
       engdescription,
       arabtitle,
@@ -146,21 +148,29 @@ exports.updateSingleBanner = async (req, res, next) => {
       arabicheading1,
       arabicheading2,
       arabicheading3,
-    } = body;
+    } = req.body;
 
+
+    // Uploaded files: req.files is an object { image1: [file], image2: [file], image3: [file] }
     const files = req.files || {};
 
+    // Helper to get public path or fallback to req.body if no upload
     const getImagePath = (fieldName) => {
       if (files[fieldName] && files[fieldName][0]) {
-        return `${req.protocol}://${req.get("host")}/uploads/banners/${files[fieldName][0].filename}`;
+        // Assuming your server serves /public as root, e.g., http://domain.com/banner/filename.jpg
+        return `/banner/${files[fieldName][0].filename}`;
       }
-      return body[fieldName] || "";
+      // fallback to old URL in req.body
+      return req.body[fieldName] || "";
     };
 
+    // Ensure post exists
     let post = await PostModel.findByName("home_banner");
-    if (!post) post = await PostModel.create({ name: "home_banner" });
+    if (!post) {
+      post = await PostModel.create({ name: "home_banner" });
+    }
 
-    // English banner
+    // Prepare English banner data
     let banner_en = await BannerModel.findByPostAndLang(post.id, "en");
     const enData = {
       title: engtitle,
@@ -175,12 +185,14 @@ exports.updateSingleBanner = async (req, res, next) => {
       post_name: post.name,
       post_id: post.id,
     };
-    banner_en
-      ? (banner_en = await BannerModel.updateById(banner_en.id, enData))
-      : (banner_en = await BannerModel.create(enData));
+    if (banner_en) {
+      banner_en = await BannerModel.updateById(banner_en.id, enData);
+    } else {
+      banner_en = await BannerModel.create(enData);
+    }
 
-    // Arabic banner
-    let banner_ar = await BannerModel.findByPostAndLang(post.id, "ar");
+    // Prepare Arabic banner data
+     let banner_ar = await BannerModel.findByPostAndLang(post.id, "ar");
     const arData = {
       title: arabtitle,
       description: arabdescription,
@@ -194,9 +206,12 @@ exports.updateSingleBanner = async (req, res, next) => {
       post_name: post.name,
       post_id: post.id,
     };
-    banner_ar
-      ? (banner_ar = await BannerModel.updateById(banner_ar.id, arData))
-      : (banner_ar = await BannerModel.create(arData));
+
+    if (banner_ar) {
+      banner_ar = await BannerModel.updateById(banner_ar.id, arData);
+    } else {
+      banner_ar = await BannerModel.create(arData);
+    }
 
     successResponse(res, { banner_en, banner_ar }, "Banners updated successfully", 200);
   } catch (err) {
@@ -204,9 +219,11 @@ exports.updateSingleBanner = async (req, res, next) => {
   }
 };
 
-/* ======================================================
-   🟩 UPDATE BANNER EXTRAS (Tab 2)
-   ====================================================== */
+
+
+
+
+// 🟩 Update Banner Extras (subtitle, subheading, buttonname)
 exports.updateBannerExtras = async (req, res, next) => {
   try {
     const {
@@ -218,9 +235,11 @@ exports.updateBannerExtras = async (req, res, next) => {
       arabicbuttonname,
     } = req.body;
 
+    // Find or create "home_banner" post
     let post = await PostModel.findByName("home_banner");
     if (!post) post = await PostModel.create({ name: "home_banner" });
 
+    // 🟩 English Banner
     let banner_en = await BannerModel.findByPostAndLang(post.id, "en");
     const enData = {
       subtitle,
@@ -230,10 +249,14 @@ exports.updateBannerExtras = async (req, res, next) => {
       post_id: post.id,
       post_name: post.name,
     };
-    banner_en
-      ? (banner_en = await BannerModel.updateById(banner_en.id, enData))
-      : (banner_en = await BannerModel.create(enData));
 
+    if (banner_en) {
+      banner_en = await BannerModel.updateById(banner_en.id, enData);
+    } else {
+      banner_en = await BannerModel.create(enData);
+    }
+
+    // 🟩 Arabic Banner
     let banner_ar = await BannerModel.findByPostAndLang(post.id, "ar");
     const arData = {
       subtitle: arabicsubtitle,
@@ -243,9 +266,12 @@ exports.updateBannerExtras = async (req, res, next) => {
       post_id: post.id,
       post_name: post.name,
     };
-    banner_ar
-      ? (banner_ar = await BannerModel.updateById(banner_ar.id, arData))
-      : (banner_ar = await BannerModel.create(arData));
+
+    if (banner_ar) {
+      banner_ar = await BannerModel.updateById(banner_ar.id, arData);
+    } else {
+      banner_ar = await BannerModel.create(arData);
+    }
 
     successResponse(res, { banner_en, banner_ar }, "Banner extras updated successfully", 200);
   } catch (err) {
@@ -253,9 +279,7 @@ exports.updateBannerExtras = async (req, res, next) => {
   }
 };
 
-/* ======================================================
-   🟩 GET BANNER EXTRAS (Tab 2)
-   ====================================================== */
+// 🟩 Get only Banner Extras (for Tab 2 fetch)
 exports.getBannerExtras = async (req, res, next) => {
   try {
     const banners = await BannerModel.getAll();
@@ -277,9 +301,96 @@ exports.getBannerExtras = async (req, res, next) => {
   }
 };
 
-/* ======================================================
-   🟩 UPDATE BANNER SUB EXTRAS (Tab 3)
-   ====================================================== */
+
+
+
+
+
+
+
+
+
+
+// 🟩 Update Banner Extras (subtitle, subheading, buttonname)
+exports.updateBannerExtras = async (req, res, next) => {
+  try {
+    const {
+      subtitle,
+      subheading,
+      buttonname,
+      arabicsubtitle,
+      arabicsubheading,
+      arabicbuttonname,
+    } = req.body;
+
+    // Find or create "home_banner" post
+    let post = await PostModel.findByName("home_banner");
+    if (!post) post = await PostModel.create({ name: "home_banner" });
+
+    // 🟩 English Banner
+    let banner_en = await BannerModel.findByPostAndLang(post.id, "en");
+    const enData = {
+      subtitle,
+      subheading,
+      buttonname,
+      language: "en",
+      post_id: post.id,
+      post_name: post.name,
+    };
+
+    if (banner_en) {
+      banner_en = await BannerModel.updateById(banner_en.id, enData);
+    } else {
+      banner_en = await BannerModel.create(enData);
+    }
+
+    // 🟩 Arabic Banner
+    let banner_ar = await BannerModel.findByPostAndLang(post.id, "ar");
+    const arData = {
+      subtitle: arabicsubtitle,
+      subheading: arabicsubheading,
+      buttonname: arabicbuttonname,
+      language: "ar",
+      post_id: post.id,
+      post_name: post.name,
+    };
+
+    if (banner_ar) {
+      banner_ar = await BannerModel.updateById(banner_ar.id, arData);
+    } else {
+      banner_ar = await BannerModel.create(arData);
+    }
+
+    successResponse(res, { banner_en, banner_ar }, "Banner extras updated successfully", 200);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 🟩 Get only Banner Extras (for Tab 2 fetch)
+exports.getBannerExtras = async (req, res, next) => {
+  try {
+    const banners = await BannerModel.getAll();
+    const en = banners.find((b) => b.language === "en") || {};
+    const ar = banners.find((b) => b.language === "ar") || {};
+
+    const extras = {
+      subtitle: en.subtitle || "",
+      subheading: en.subheading || "",
+      buttonname: en.buttonname || "",
+      arabicsubtitle: ar.subtitle || "",
+      arabicsubheading: ar.subheading || "",
+      arabicbuttonname: ar.buttonname || "",
+    };
+
+    successResponse(res, { extras }, "Banner extras fetched successfully", 200);
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+// 🟩 Update Banner Sub Extras (subdescription, subbuttonname)
 exports.updateBannerSubExtras = async (req, res, next) => {
   try {
     const {
@@ -289,9 +400,11 @@ exports.updateBannerSubExtras = async (req, res, next) => {
       arabicsubbuttonname,
     } = req.body;
 
+    // Find or create the "home_banner" post
     let post = await PostModel.findByName("home_banner");
     if (!post) post = await PostModel.create({ name: "home_banner" });
 
+    // 🟩 English Banner Sub Extras
     let banner_en = await BannerModel.findByPostAndLang(post.id, "en");
     const enData = {
       subdescription,
@@ -300,10 +413,12 @@ exports.updateBannerSubExtras = async (req, res, next) => {
       post_id: post.id,
       post_name: post.name,
     };
+
     banner_en
       ? (banner_en = await BannerModel.updateById(banner_en.id, enData))
       : (banner_en = await BannerModel.create(enData));
 
+    // 🟩 Arabic Banner Sub Extras
     let banner_ar = await BannerModel.findByPostAndLang(post.id, "ar");
     const arData = {
       subdescription: arabicsubdescription,
@@ -312,19 +427,23 @@ exports.updateBannerSubExtras = async (req, res, next) => {
       post_id: post.id,
       post_name: post.name,
     };
+
     banner_ar
       ? (banner_ar = await BannerModel.updateById(banner_ar.id, arData))
       : (banner_ar = await BannerModel.create(arData));
 
-    successResponse(res, { banner_en, banner_ar }, "Banner sub extras updated successfully", 200);
+    successResponse(
+      res,
+      { banner_en, banner_ar },
+      "Banner sub extras updated successfully",
+      200
+    );
   } catch (err) {
     next(err);
   }
 };
 
-/* ======================================================
-   🟩 GET BANNER SUB EXTRAS (Tab 3)
-   ====================================================== */
+// 🟩 Get only Banner Sub Extras (for Tab 3 fetch)
 exports.getBannerSubExtras = async (req, res, next) => {
   try {
     const banners = await BannerModel.getAll();
@@ -338,8 +457,14 @@ exports.getBannerSubExtras = async (req, res, next) => {
       arabicsubbuttonname: ar.subbuttonname || "",
     };
 
-    successResponse(res, { subExtras }, "Banner sub extras fetched successfully", 200);
+    successResponse(
+      res,
+      { subExtras },
+      "Banner sub extras fetched successfully",
+      200
+    );
   } catch (err) {
     next(err);
   }
 };
+
