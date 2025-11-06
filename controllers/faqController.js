@@ -3,69 +3,43 @@ const PostModel = require("../models/PostModel");
 const { successResponse } = require("../utils/response");
 const { ValidationError, NotFoundError } = require("../utils/errors");
 
-// 🟩 Create FAQ (auto-increment post_name)
+// 🟩 Create FAQ (multiple entries allowed)
 exports.createFaq = async (req, res, next) => {
   try {
-    const {
-      engtitle,
-      engquestion,
-      enganswer,
-      arabtitle,
-      arabquestion,
-      arabanswer,
-    } = req.body;
+    const { engtitle, engquestion, enganswer, arabtitle, arabquestion, arabanswer } = req.body;
 
-    // Optional: Validation
-    // if (!engquestion || !enganswer || !arabquestion || !arabanswer) {
-    //   throw new ValidationError("All FAQ fields are required");
+    // Validate required fields
+    // if (!engtitle || !engquestion || !enganswer || !arabtitle || !arabquestion || !arabanswer) {
+    //   throw new ValidationError("All English and Arabic FAQ fields are required");
     // }
 
-    // 🟩 Fetch all existing posts to find next faq_content number
-    const allPosts = await PostModel.getAll(); // Must exist in PostModel
-    const faqPosts = allPosts.filter((p) => p.name.startsWith("faq_content"));
-
-    // 🟩 Determine the next available number (handles missing/deleted posts)
-    let nextNumber = 1;
-    if (faqPosts.length > 0) {
-      const numbers = faqPosts
-        .map((p) => parseInt(p.name.replace("faq_content", ""), 10))
-        .filter((n) => !isNaN(n));
-      nextNumber = Math.max(...numbers) + 1;
+    // Find or create the 'faq_content' post
+    let post = await PostModel.findByName("faq_content");
+    if (!post) {
+      post = await PostModel.create({ name: "faq_content" });
     }
 
-    // 🟩 Generate new post name
-    const newPostName = `faq_content${nextNumber}`;
-
-    // 🟩 Create a new post record
-    const post = await PostModel.create({ name: newPostName });
-
-    // 🟩 Create English FAQ
+    // 🟩 Always create a NEW English FAQ
     const faq_en = await FaqModel.create({
       title: engtitle,
       question: engquestion,
       answer: enganswer,
       language: "en",
-      post_name: newPostName,
+      post_name: post.name,
       post_id: post.id,
     });
 
-    // 🟩 Create Arabic FAQ
+    // 🟩 Always create a NEW Arabic FAQ
     const faq_ar = await FaqModel.create({
       title: arabtitle,
       question: arabquestion,
       answer: arabanswer,
       language: "ar",
-      post_name: newPostName,
+      post_name: post.name,
       post_id: post.id,
     });
 
-    // 🟩 Send success response
-    successResponse(
-      res,
-      { faq_en, faq_ar, post_name: newPostName },
-      `FAQ created successfully as ${newPostName}`,
-      201
-    );
+    successResponse(res, { faq_en, faq_ar }, "FAQ created successfully", 201);
   } catch (err) {
     next(err);
   }
