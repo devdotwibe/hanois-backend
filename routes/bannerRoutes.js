@@ -1,4 +1,6 @@
 const express = require("express");
+const multer = require("multer");
+const path = require("path");
 const router = express.Router();
 
 const {
@@ -18,6 +20,18 @@ const {
    🟩 ROUTE ORDER IS IMPORTANT IN EXPRESS
    ====================================================== */
 
+// Multer storage config to save files in public/banner folder
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, "../public/banner"));
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+const upload = multer({ storage: storage });
+
 /* ================================
    TAB 2 — Banner Extras (subtitle, subheading, buttonname)
    ================================ */
@@ -33,9 +47,21 @@ router.put("/update-subextras", updateBannerSubExtras); // Update sub extras for
 /* ================================
    TAB 1 — Main Banner (title, description, images, headings)
    ================================ */
-router.post("/", createBanner);                   // Create new banner (Tab 1)
-router.get("/", getBanners);                      // List all banners
-router.put("/update-single", updateSingleBanner); // Update main banner (Tab 1)
+
+// Create new banner (Tab 1)
+router.post("/", createBanner);
+// List all banners
+router.get("/", getBanners);
+// Update main banner (Tab 1) with file upload middleware
+router.put(
+  "/update-single",
+  upload.fields([
+    { name: "image1" },
+    { name: "image2" },
+    { name: "image3" },
+  ]),
+  updateSingleBanner
+);
 
 /* ================================
    ID-BASED ROUTES (must be last)
