@@ -201,6 +201,6 @@ exports.deleteProvider = async (req, res, next) => {
     
   } catch (err) {
   
-    next(new DatabaseError('Failed to delete Provider'));
+     next(new Error('Failed to delete provider'));
   }
 };
