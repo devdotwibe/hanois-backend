@@ -79,6 +79,17 @@ app.use(errorHandler);
 const server = app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
   console.log(`Environment: ${config.nodeEnv}`);
+
+    console.log("=======================================");
+  console.log("🚀 Server Started Successfully!");
+  console.log(`📡 Host: ${host}`);
+  console.log(`🌐 Accessible at: http://${host}:${port}`);
+  console.log(`🧩 Environment: ${config.nodeEnv}`);
+  console.log(`🕒 Started at: ${new Date().toLocaleString()}`);
+  console.log("=======================================");
+
+
+  
 });
 
 const gracefulShutdown = (signal) => {
