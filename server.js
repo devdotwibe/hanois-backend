@@ -34,6 +34,10 @@ app.use(morgan(config.nodeEnv === 'development' ? 'dev' : 'combined'));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+
+
 app.use(
   cors({
     origin: "http://localhost:3000",
