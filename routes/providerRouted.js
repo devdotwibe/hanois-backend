@@ -22,6 +22,7 @@ router.delete('/:id', authenticateToken, deleteProvider);
 
 router.put('/:id', authenticateToken, updateProvider);
 
-router.get('/:id', getProviderById);
+router.get('/:id', authenticateToken, getProviderById);
 
 module.exports = router;
+ 
