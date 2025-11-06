@@ -2,7 +2,7 @@ const ProviderModel = require('../models/providerModel');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const { successResponse, errorResponse } = require('../utils/response');
-const { ValidationError, AuthenticationError, ConflictError } = require('../utils/errors');
+const { ValidationError,,DatabaseError, AuthenticationError, ConflictError } = require('../utils/errors');
 const { config } = require('../config/env');
 const { sendMail } = require('../config/mailer');
 const { validateEmail } = require('../utils/validateEmail');
@@ -186,21 +186,21 @@ exports.getProviders = async (req, res, next) => {
 };
 
 
-exports.deletePrivider = async (req, res, next) => {
+exports.deleteProvider = async (req, res, next) => {
   try {
     const { id } = req.params;
 
     const userResult = await pool.query('SELECT * FROM providers WHERE id = $1', [id]);
     if (userResult.rows.length === 0) {
-      throw new NotFoundError('Privider not found');
+      throw new NotFoundError('Provider not found');
     }
 
     await pool.query('DELETE FROM providers WHERE id = $1', [id]);
 
-    successResponse(res, null, 'Privider successfully');
+    successResponse(res, null, 'Provider successfully');
     
   } catch (err) {
   
-    next(new DatabaseError('Failed to delete Privider'));
+    next(new DatabaseError('Failed to delete Provider'));
   }
 };
