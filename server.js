@@ -15,7 +15,7 @@ const settingsRoutes = require('./routes/settingsRoutes');
 
 const providerRouted = require('./routes/providerRouted');
 
-const faqRoutes = require("./routes/faqRoutes");
+// const faqRoutes = require("./routes/faqRoutes");
 
 const pageRoutes = require("./routes/pageRoutes");
 
@@ -54,7 +54,7 @@ app.use('/api/banner', bannerRoutes);
 
 app.use('/api/settings', settingsRoutes);
 
-app.use("/api/faq", faqRoutes);
+// app.use("/api/faq", faqRoutes);
 
 app.use("/api/page", pageRoutes);
 
