@@ -15,11 +15,11 @@ const settingsRoutes = require('./routes/settingsRoutes');
 
 const providerRouted = require('./routes/providerRouted');
 
-// const faqRoutes = require("./routes/faqRoutes");
+const faqRoutes = require("./routes/faqRoutes");
 
 const pageRoutes = require("./routes/pageRoutes");
 
-// const categoryRoutes = require('./routes/categoryRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
 
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const pool = require('./db/pool');
@@ -54,11 +54,11 @@ app.use('/api/banner', bannerRoutes);
 
 app.use('/api/settings', settingsRoutes);
 
-// app.use("/api/faq", faqRoutes);
+app.use("/api/faq", faqRoutes);
 
 app.use("/api/page", pageRoutes);
 
-// app.use("/api/categories", categoryRoutes);
+app.use("/api/categories", categoryRoutes);
 
 
 
@@ -79,46 +79,24 @@ app.use(errorHandler);
 const server = app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
   console.log(`Environment: ${config.nodeEnv}`);
-
-    console.log("=======================================");
-  console.log("🚀 Server Started Successfully!");
- 
-
-  console.log(`🧩 Environment: ${config.nodeEnv}`);
-  console.log(`🕒 Started at: ${new Date().toLocaleString()}`);
-  console.log("=======================================");
-
-
-
 });
+
 const gracefulShutdown = (signal) => {
-  console.log("=======================================");
-  console.log(`🛑 ${signal} received. Starting graceful shutdown...`);
-  console.log(`🕒 Time: ${new Date().toLocaleString()}`);
-  console.log("=======================================");
-
-  // Step 1: Try closing HTTP server
-  console.log("🔧 Attempting to close HTTP server...");
+  console.log(`\n${signal} received. Starting graceful shutdown...`);
+  
   server.close(() => {
-    console.log("✅ HTTP server closed successfully");
-
-    // Step 2: Close PostgreSQL connection pool
-    console.log("🔧 Attempting to close PostgreSQL connection pool...");
+    console.log('HTTP server closed');
+    
     pool.end(() => {
-      console.log("✅ Database connection pool closed successfully");
-      console.log("👋 Exiting process cleanly...");
+      console.log('Database connection pool closed');
       process.exit(0);
     });
   });
 
-  // Step 3: If something hangs beyond 10 seconds, force exit
-  const shutdownTimeout = 10000;
-  console.log(`⏳ Waiting up to ${shutdownTimeout / 1000} seconds for cleanup...`);
-  
   setTimeout(() => {
-    console.error("⚠️ Forced shutdown after timeout — cleanup may be incomplete!");
+    console.error('Forced shutdown after timeout');
     process.exit(1);
-  }, shutdownTimeout);
+  }, 10000);
 };
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
