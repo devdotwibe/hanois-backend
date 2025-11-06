@@ -40,7 +40,6 @@ class serviceController {
       res.status(201).json(newservice);
     } catch (error) {
       console.error("Error creating service:", error);
-console.log("Request body:", req.body);
 
       if (error.code === "23505") {
         return res.status(409).json({ message: "service name already exists." });
