@@ -25,3 +25,4 @@ router.put('/:id', authenticateToken, updateProvider);
 router.get('/:id', authenticateToken, getProviderById);
 
 module.exports = router;
+ 
