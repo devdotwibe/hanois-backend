@@ -1,6 +1,7 @@
 const { validateEnv, config } = require('./config/env');
 validateEnv();
 const path = require('path');  
+const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -34,9 +35,16 @@ app.use(morgan(config.nodeEnv === 'development' ? 'dev' : 'combined'));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+const bannerDir = path.join(__dirname, 'public/banner');
+if (!fs.existsSync(bannerDir)) {
+  fs.mkdirSync(bannerDir, { recursive: true });
+  console.log('✅ Created /public/banner directory automatically');
+}
 
 
+
+
+app.use('/banner', express.static(bannerDir));
 
 app.use(
   cors({
