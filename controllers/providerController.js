@@ -216,6 +216,23 @@ exports.deleteProvider = async (req, res, next) => {
   }
 };
 
+exports.getProviderById = async (req, res, next) => {
+  try {
+    const providerId = req.params.id;
+    const provider = await ProviderModel.findById(providerId);
+
+    if (!provider) {
+      return res.status(404).json({ error: "Provider not found" });
+    }
+
+    res.json({ provider });
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+
 
 exports.updateProvider = async (req, res, next) => {
   try {
