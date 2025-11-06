@@ -184,3 +184,23 @@ exports.getProviders = async (req, res, next) => {
     next(err);
   }
 };
+
+
+exports.deletePrivider = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const userResult = await pool.query('SELECT * FROM providers WHERE id = $1', [id]);
+    if (userResult.rows.length === 0) {
+      throw new NotFoundError('Privider not found');
+    }
+
+    await pool.query('DELETE FROM providers WHERE id = $1', [id]);
+
+    successResponse(res, null, 'Privider successfully');
+    
+  } catch (err) {
+  
+    next(new DatabaseError('Failed to delete Privider'));
+  }
+};
