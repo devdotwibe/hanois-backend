@@ -57,6 +57,7 @@ app.use("/api/faq", faqRoutes);
 
 app.use("/api/page", pageRoutes);
 
+app.use("/api/categories", categoryRoutes);
 
 
 
