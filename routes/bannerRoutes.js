@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+const multer = require("multer");
+const path = require("path");
 
 const {
   createBanner,
@@ -13,6 +15,35 @@ const {
   updateBannerSubExtras, // 🟩 Tab 3 (subdescription, subbuttonname)
   getBannerSubExtras,    // 🟩 Fetch sub extras (Tab 3)
 } = require("../controllers/bannerController");
+
+/* ======================================================
+   🟩 MULTER CONFIGURATION (for image uploads)
+   ====================================================== */
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/banners/"); // Folder where images are stored
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + "_" + file.originalname);
+  },
+});
+
+const upload = multer({ storage });
+
+/* ======================================================
+   🟩 IMAGE UPLOAD ROUTE
+   ====================================================== */
+// Example: POST /api/banner/upload
+router.post("/upload", upload.single("file"), (req, res) => {
+  try {
+    const filePath = `/uploads/banners/${req.file.filename}`;
+    const fullUrl = `${req.protocol}://${req.get("host")}${filePath}`;
+    res.json({ url: fullUrl }); // Frontend will receive this URL
+  } catch (error) {
+    console.error("❌ Upload failed:", error);
+    res.status(500).json({ error: "File upload failed" });
+  }
+});
 
 /* ======================================================
    🟩 ROUTE ORDER IS IMPORTANT IN EXPRESS
