@@ -19,6 +19,7 @@ const faqRoutes = require("./routes/faqRoutes");
 
 const pageRoutes = require("./routes/pageRoutes");
 
+const categoryRoutes = require('./routes/categoryRoutes');
 
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const pool = require('./db/pool');
@@ -57,6 +58,7 @@ app.use("/api/faq", faqRoutes);
 
 app.use("/api/page", pageRoutes);
 
+app.use("/api/categories", categoryRoutes);
 
 
 

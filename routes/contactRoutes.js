@@ -21,3 +21,4 @@ router.put('/:id', updateContact);
 router.delete('/:id', deleteContact);
 
 module.exports = router;
+ 

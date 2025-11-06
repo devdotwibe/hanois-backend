@@ -2,11 +2,11 @@ const ProviderModel = require('../models/providerModel');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const { successResponse, errorResponse } = require('../utils/response');
-const { ValidationError, AuthenticationError, ConflictError } = require('../utils/errors');
+const { ValidationError,DatabaseError, AuthenticationError, ConflictError } = require('../utils/errors');
 const { config } = require('../config/env');
 const { sendMail } = require('../config/mailer');
 const { validateEmail } = require('../utils/validateEmail');
-
+const pool = require("../db/pool");
 const JWT_SECRET = "a3f9b0e1a8c2d34e5f67b89a0c1d2e3f4a5b6c7d8e9f00112233445566778899";
 
 
@@ -186,21 +186,32 @@ exports.getProviders = async (req, res, next) => {
 };
 
 
-exports.deletePrivider = async (req, res, next) => {
+exports.deleteProvider = async (req, res, next) => {
   try {
     const { id } = req.params;
 
+    // Check if provider exists
     const userResult = await pool.query('SELECT * FROM providers WHERE id = $1', [id]);
     if (userResult.rows.length === 0) {
-      throw new NotFoundError('Privider not found');
+      return res.status(404).json({
+        success: false,
+        error: 'Provider not found',
+      });
     }
 
     await pool.query('DELETE FROM providers WHERE id = $1', [id]);
 
-    successResponse(res, null, 'Privider successfully');
-    
+    return res.json({
+      success: true,
+      message: 'Provider deleted successfully',
+    });
+
   } catch (err) {
-  
-    next(new DatabaseError('Failed to delete Privider'));
+    console.error('Delete provider error:', err.message);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to delete provider',
+      details: err.message,
+    });
   }
 };

@@ -4,7 +4,7 @@ const router = express.Router();
 const { registerProvider,
     resetPassword, 
     getProviders,
-    deletePrivider
+    deleteProvider
 } = require('../controllers/providerController');
 const { providerValidation } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
@@ -16,6 +16,6 @@ router.post('/reset-password', resetPassword);
 
 router.get('/', getProviders);
 
-router.delete('/:id', authenticateToken, deletePrivider);
+router.delete('/:id', authenticateToken, deleteProvider);
 
 module.exports = router;
