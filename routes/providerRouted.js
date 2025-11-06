@@ -4,7 +4,8 @@ const router = express.Router();
 const { registerProvider,
     resetPassword, 
     getProviders,
-    deleteProvider
+    deleteProvider,
+    updateProvider
 } = require('../controllers/providerController');
 const { providerValidation } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
