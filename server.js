@@ -83,7 +83,7 @@ const server = app.listen(port, () => {
     console.log("=======================================");
   console.log("🚀 Server Started Successfully!");
  
-  console.log(`🌐 Accessible at: http://${host}:${port}`);
+
   console.log(`🧩 Environment: ${config.nodeEnv}`);
   console.log(`🕒 Started at: ${new Date().toLocaleString()}`);
   console.log("=======================================");
@@ -91,23 +91,34 @@ const server = app.listen(port, () => {
 
 
 });
-
 const gracefulShutdown = (signal) => {
-  console.log(`\n${signal} received. Starting graceful shutdown...`);
-  
+  console.log("=======================================");
+  console.log(`🛑 ${signal} received. Starting graceful shutdown...`);
+  console.log(`🕒 Time: ${new Date().toLocaleString()}`);
+  console.log("=======================================");
+
+  // Step 1: Try closing HTTP server
+  console.log("🔧 Attempting to close HTTP server...");
   server.close(() => {
-    console.log('HTTP server closed');
-    
+    console.log("✅ HTTP server closed successfully");
+
+    // Step 2: Close PostgreSQL connection pool
+    console.log("🔧 Attempting to close PostgreSQL connection pool...");
     pool.end(() => {
-      console.log('Database connection pool closed');
+      console.log("✅ Database connection pool closed successfully");
+      console.log("👋 Exiting process cleanly...");
       process.exit(0);
     });
   });
 
+  // Step 3: If something hangs beyond 10 seconds, force exit
+  const shutdownTimeout = 10000;
+  console.log(`⏳ Waiting up to ${shutdownTimeout / 1000} seconds for cleanup...`);
+  
   setTimeout(() => {
-    console.error('Forced shutdown after timeout');
+    console.error("⚠️ Forced shutdown after timeout — cleanup may be incomplete!");
     process.exit(1);
-  }, 10000);
+  }, shutdownTimeout);
 };
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
