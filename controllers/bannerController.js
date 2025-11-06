@@ -137,7 +137,9 @@ exports.deleteBanner = async (req, res, next) => {
 // 🟩 Update Single Banner (for homepage updates)
 exports.updateSingleBanner = async (req, res, next) => {
   try {
-      const {
+   const body = req.body || {};
+   
+    const {
       engtitle,
       engdescription,
       arabtitle,
@@ -148,20 +150,18 @@ exports.updateSingleBanner = async (req, res, next) => {
       arabicheading1,
       arabicheading2,
       arabicheading3,
-    } = req.body;
+    } = body;
 
 
-    // Uploaded files: req.files is an object { image1: [file], image2: [file], image3: [file] }
+    // multer files
     const files = req.files || {};
 
-    // Helper to get public path or fallback to req.body if no upload
+    // Helper to get uploaded file path or fallback to existing URL string
     const getImagePath = (fieldName) => {
-      if (files[fieldName] && files[fieldName][0]) {
-        // Assuming your server serves /public as root, e.g., http://domain.com/banner/filename.jpg
-        return `/banner/${files[fieldName][0].filename}`;
+      if (files[fieldName]?.[0]) {
+        return `/banner/${files[fieldName][0].filename}`; // public URL path
       }
-      // fallback to old URL in req.body
-      return req.body[fieldName] || "";
+      return req.body[fieldName] || ""; // existing URL from body if no new upload
     };
 
     // Ensure post exists
@@ -185,6 +185,7 @@ exports.updateSingleBanner = async (req, res, next) => {
       post_name: post.name,
       post_id: post.id,
     };
+
     if (banner_en) {
       banner_en = await BannerModel.updateById(banner_en.id, enData);
     } else {
@@ -192,7 +193,7 @@ exports.updateSingleBanner = async (req, res, next) => {
     }
 
     // Prepare Arabic banner data
-     let banner_ar = await BannerModel.findByPostAndLang(post.id, "ar");
+    let banner_ar = await BannerModel.findByPostAndLang(post.id, "ar");
     const arData = {
       title: arabtitle,
       description: arabdescription,
@@ -218,7 +219,6 @@ exports.updateSingleBanner = async (req, res, next) => {
     next(err);
   }
 };
-
 
 
 
