@@ -190,17 +190,28 @@ exports.deleteProvider = async (req, res, next) => {
   try {
     const { id } = req.params;
 
+    // Check if provider exists
     const userResult = await pool.query('SELECT * FROM providers WHERE id = $1', [id]);
     if (userResult.rows.length === 0) {
-      throw new NotFoundError('Provider not found');
+      return res.status(404).json({
+        success: false,
+        error: 'Provider not found',
+      });
     }
 
     await pool.query('DELETE FROM providers WHERE id = $1', [id]);
 
-    successResponse(res, null, 'Provider successfully');
-    
+    return res.json({
+      success: true,
+      message: 'Provider deleted successfully',
+    });
+
   } catch (err) {
-  
-     next(new Error('Failed to delete provider'));
+    console.error('Delete provider error:', err.message);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to delete provider',
+      details: err.message,
+    });
   }
 };
