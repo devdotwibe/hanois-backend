@@ -215,3 +215,94 @@ exports.deleteProvider = async (req, res, next) => {
     });
   }
 };
+
+
+exports.updateProvider = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Collect all updatable fields from request body
+    const {
+      name,
+      email,
+      phone,
+      register_no,
+      location,
+      team_size,
+      service,
+      website,
+      social_media,
+      categories_id,
+      notes,
+      facebook,
+      instagram,
+      other_link,
+      service_id
+    } = req.body;
+
+    // Check if provider exists
+    const existingProvider = await pool.query('SELECT * FROM providers WHERE id = $1', [id]);
+    if (existingProvider.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Provider not found',
+      });
+    }
+
+    // Build dynamic update query
+    const fields = {
+      name,
+      email,
+      phone,
+      register_no,
+      location,
+      team_size,
+      service,
+      website,
+      social_media,
+      categories_id,
+      notes,
+      facebook,
+      instagram,
+      other_link,
+      service_id,
+    };
+
+    // Filter out undefined fields (only update provided ones)
+    const keys = Object.keys(fields).filter((key) => fields[key] !== undefined);
+
+    if (keys.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No fields provided for update',
+      });
+    }
+
+    // Build SET clause dynamically
+    const setClause = keys.map((key, idx) => `${key} = $${idx + 2}`).join(', ');
+    const values = keys.map((key) => fields[key]);
+
+    const query = `
+      UPDATE providers
+      SET ${setClause}
+      WHERE id = $1
+      RETURNING *;
+    `;
+
+    const result = await pool.query(query, [id, ...values]);
+    const updatedProvider = result.rows[0];
+
+    return res.status(200).json({
+      success: true,
+      message: 'Provider updated successfully',
+      provider: updatedProvider,
+    });
+  } catch (err) {
+    console.error('Update provider error:', err.message);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to update provider',
+      details: err.message,
+    });
+  }
+};
