@@ -18,4 +18,6 @@ router.get('/', getProviders);
 
 router.delete('/:id', authenticateToken, deleteProvider);
 
+router.put('/:id', authenticateToken, updateProvider);
+
 module.exports = router;
