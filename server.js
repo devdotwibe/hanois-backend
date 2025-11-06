@@ -65,7 +65,6 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/services", servicesRoutes);
 
 
-
 app.get('/', (req, res) => {
   res.json({
     success: true,
