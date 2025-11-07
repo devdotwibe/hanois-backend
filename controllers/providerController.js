@@ -284,81 +284,47 @@ exports.updateProvider = async (req, res, next) => {
 
 
 
-const multer = require("multer");
-const path = require("path");
-const ProviderModel = require("../models/providerModel");
+const multer = require('multer');
+const path = require('path');
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "public/uploads/"),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, Date.now() + ext);
+  destination: (req, file, cb) => {
+    cb(null, 'public/uploads/'); 
   },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname); 
+    const fileName = Date.now() + ext; 
+    cb(null, fileName); 
+  }
 });
 
-const upload = multer({ storage });
+const upload = multer({ storage: storage });
 
-/**
- * Update Provider Image (upload/remove)
- */
-exports.updateProviderImage = [
-  upload.single("image"),
+exports.updateProviderProfile = [
+  upload.single('image'),
   async (req, res, next) => {
     try {
-      const providerId = req.params.providerId || (req.user && req.user.id);
-      if (!providerId)
-        return res.status(400).json({ error: "Provider ID not found" });
+      const providerId = req.params.providerId;
+      const { professional_headline } = req.body;
 
-      const { remove_image } = req.body;
-      const updateData = {};
-
-      if (req.file) {
-        updateData.image = `/uploads/${req.file.filename}`;
-      } else if (remove_image === "1" || remove_image === "true") {
-        updateData.image = null;
-      } else {
-        return res
-          .status(400)
-          .json({ error: "No image file uploaded or remove flag provided" });
+      if (!providerId) {
+        return res.status(400).json({ error: 'Provider ID is required in URL' });
       }
 
-      const updatedProvider = await ProviderModel.updateProfile(
-        providerId,
-        updateData
-      );
-      return res.json({
-        data: { provider: updatedProvider },
-        message: "Image updated successfully",
+      let imageUrl = null;
+      if (req.file) {
+        imageUrl = `/uploads/${req.file.filename}`;
+      }
+
+      const updatedProvider = await ProviderModel.updateProfile(providerId, {
+        image: imageUrl,
+        professional_headline
       });
+
+      return successResponse(res, { provider: updatedProvider }, 'Profile updated successfully');
     } catch (err) {
-      next(err);
+      next(err); 
     }
-  },
+  }
 ];
 
-/**
- * Update Provider Headline only
- */
-exports.updateProviderHeadline = async (req, res, next) => {
-  try {
-    const providerId = req.params.providerId || (req.user && req.user.id);
-    if (!providerId)
-      return res.status(400).json({ error: "Provider ID not found" });
-
-    const { professional_headline } = req.body;
-    if (typeof professional_headline === "undefined") {
-      return res.status(400).json({ error: "Missing professional_headline" });
-    }
-
-    const updatedProvider = await ProviderModel.updateProfile(providerId, {
-      professional_headline,
-    });
-
-    return res.json({
-      data: { provider: updatedProvider },
-      message: "Headline updated successfully",
-    });
-  } catch (err) {
-    next(err);
-  }
-};
