@@ -50,7 +50,7 @@ class ProviderModel {
 
   static async findById(id) {
     const result = await pool.query(
-      "SELECT id, name, email, phone, created_at FROM users WHERE id = $1", 
+      "SELECT id, name, email, phone, created_at FROM providers WHERE id = $1",
       [id]
     );
     return result.rows[0];
@@ -79,33 +79,66 @@ class ProviderModel {
       values.push(hashedPassword);
     }
 
+    // If no fields to update, return current row
+    if (fields.length === 0) {
+      const existing = await pool.query(
+        "SELECT id, name, email, phone, created_at FROM providers WHERE id = $1",
+        [id]
+      );
+      return existing.rows[0];
+    }
+
     values.push(id);
 
     const result = await pool.query(
-      `UPDATE users SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING id, name, email, phone, created_at`,
+      `UPDATE providers SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING id, name, email, phone, created_at`,
       values
     );
     return result.rows[0];
   }
 
   static async deleteById(id) {
-    const result = await pool.query("DELETE FROM users WHERE id = $1 RETURNING id", [id]);
+    const result = await pool.query("DELETE FROM providers WHERE id = $1 RETURNING id", [id]);
     return result.rows[0];
   }
 
-    static async updateProfile(providerId, data) {
-    const { image, professional_headline } = data;
+// ProviderModel.updateProfile
+static async updateProfile(providerId, data) {
+  const fields = [];
+  const values = [];
+  let idx = 1;
 
+  if (data.image !== undefined) {
+    fields.push(`image = $${idx++}`);
+    values.push(data.image);
+  }
+  if (data.professional_headline !== undefined) {
+    fields.push(`professional_headline = $${idx++}`);
+    values.push(data.professional_headline);
+  }
+
+  if (fields.length === 0) {
+    // Nothing to update
     const result = await pool.query(
-      `UPDATE providers 
-       SET image = $1, professional_headline = $2 
-       WHERE id = $3 
-       RETURNING id, name, email, image, professional_headline`,
-      [image, professional_headline, providerId]
+      "SELECT id, name, email, image, professional_headline FROM providers WHERE id = $1",
+      [providerId]
     );
-
     return result.rows[0];
   }
+
+  values.push(providerId);
+
+  const result = await pool.query(
+    `UPDATE providers
+     SET ${fields.join(', ')}
+     WHERE id = $${idx}
+     RETURNING id, name, email, image, professional_headline`,
+    values
+  );
+
+  return result.rows[0];
+}
+
 }
 
 module.exports = ProviderModel;
