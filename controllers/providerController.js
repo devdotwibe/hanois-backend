@@ -8,10 +8,6 @@ const { sendMail } = require('../config/mailer');
 const { validateEmail } = require('../utils/validateEmail');
 const pool = require("../db/pool");
 const JWT_SECRET = "a3f9b0e1a8c2d34e5f67b89a0c1d2e3f4a5b6c7d8e9f00112233445566778899";
-const multer = require('multer');
-const path = require('path');
-
-const upload = multer({ storage: storage });
 
 exports.resetPassword = async (req, res, next) => {
   try {
@@ -288,24 +284,28 @@ exports.updateProvider = async (req, res, next) => {
 
 
 
+const multer = require('multer');
+const path = require('path');
 
-
+// Define the storage configuration for multer (move this to the top)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'public/uploads/'); // Save uploaded images to this folder
+    cb(null, 'public/uploads/'); // Specify the folder where files will be stored
   },
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const fileName = Date.now() + ext;
-    cb(null, fileName);
+    const ext = path.extname(file.originalname); // Get the file extension
+    const fileName = Date.now() + ext; // Generate a unique filename using the current timestamp
+    cb(null, fileName); // Set the filename
   }
 });
+
+// Initialize multer with the storage configuration
+const upload = multer({ storage: storage });
 
 exports.updateProviderProfile = [
   upload.single('image'), // Handle image upload
   async (req, res, next) => {
     try {
-      // Access providerId from the URL path
       const providerId = req.params.providerId; // Get providerId from URL
       const { professional_headline } = req.body;
 
@@ -330,3 +330,4 @@ exports.updateProviderProfile = [
     }
   }
 ];
+
