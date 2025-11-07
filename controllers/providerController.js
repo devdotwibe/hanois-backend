@@ -286,7 +286,6 @@ exports.updateProvider = async (req, res, next) => {
 
 const multer = require("multer");
 const path = require("path");
-const ProviderModel = require("../models/providerModel");
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "public/uploads/"),
