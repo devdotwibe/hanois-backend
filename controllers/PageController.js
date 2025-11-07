@@ -114,6 +114,66 @@ exports.createPage = async (req, res, next) => {
       return successResponse(res, { cards }, "Cards saved successfully", 201);
     }
 
+
+        if (sectionKey === "get_listedhandis") {
+      const parentSection =
+        (await SectionModel.findByKey(sectionKey)) ||
+        (await SectionModel.create({ key: sectionKey }));
+
+      const files = req.files || [];
+      const body = req.body;
+      const cards = [];
+
+      for (let i = 1; i <= 2; i++) {
+        const handistitle = body[`handis_${i}_title`];
+        const handisbuttonname = body[`handis_${i}_buttonname`];
+        const imageFile = files.find((f) => f.fieldname === `handis_${i}_image`);
+
+        if (!handistitle && !handisbuttonname && !imageFile) continue;
+
+        const cardKey = `${sectionKey}_card_${i}`;
+        let section =
+          (await SectionModel.findByKey(cardKey)) ||
+          (await SectionModel.create({ key: cardKey, parent_key: sectionKey }));
+
+        // Title
+        let titleField = await FieldModel.findBySectionAndKey(section.id, "handistitle");
+        if (!titleField)
+          titleField = await FieldModel.create({ section_id: section.id, key: "handistitle", type: "text" });
+        await FieldTranslationModel.upsert(titleField.id, "en", handistitle || "");
+
+        // Button Name
+        let buttonField = await FieldModel.findBySectionAndKey(section.id, "handisbuttonname");
+        if (!buttonField)
+          buttonField = await FieldModel.create({ section_id: section.id, key: "handisbuttonname", type: "text" });
+        await FieldTranslationModel.upsert(buttonField.id, "en", handisbuttonname || "");
+
+        // Image
+        let imageField = await FieldModel.findBySectionAndKey(section.id, "handisimage");
+        if (!imageField)
+          imageField = await FieldModel.create({ section_id: section.id, key: "handisimage", type: "image" });
+
+        let imagePath = null;
+        if (imageFile && imageFile.size > 0) {
+          const destDir = path.join(__dirname, "../public/uploads/handis");
+          if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+
+          const filename = `${Date.now()}-${imageFile.originalname}`;
+          const destPath = path.join(destDir, filename);
+          fs.renameSync(imageFile.path, destPath);
+          imagePath = `${BASE_URL}/uploads/handis/${filename}`;
+        }
+
+        await FieldTranslationModel.upsert(imageField.id, "en", imagePath || "");
+        cards.push({ handistitle, handisbuttonname, image: imagePath });
+      }
+
+      return successResponse(res, { cards }, "Handis cards saved successfully", 201);
+    }
+
+
+
+
     throw new ValidationError("Invalid sectionKey");
   } catch (err) {
     // Cleanup temp files on failure
@@ -170,6 +230,31 @@ exports.getListed = async (req, res, next) => {
       return successResponse(res, { cards }, "Cards fetched successfully");
     }
 
+
+
+
+        if (sectionKey === "get_listedhandis") {
+      const cards = [];
+      for (let i = 1; i <= 2; i++) {
+        const subKey = `${sectionKey}_card_${i}`;
+        const subSection = await SectionModel.findByKey(subKey);
+        if (!subSection) continue;
+
+        const titleField = await FieldModel.findBySectionAndKey(subSection.id, "handistitle");
+        const buttonField = await FieldModel.findBySectionAndKey(subSection.id, "handisbuttonname");
+        const imageField = await FieldModel.findBySectionAndKey(subSection.id, "handisimage");
+
+        const card = {
+          handistitle: (await FieldTranslationModel.find(titleField.id, "en"))?.value || "",
+          handisbuttonname: (await FieldTranslationModel.find(buttonField.id, "en"))?.value || "",
+          image: (await FieldTranslationModel.find(imageField.id, "en"))?.value || "",
+        };
+        cards.push(card);
+      }
+
+      return successResponse(res, { cards }, "Handis cards fetched successfully");
+    }
+    
     return successResponse(res, {}, "Section fetched successfully");
   } catch (err) {
     next(err);
