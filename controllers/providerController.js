@@ -288,43 +288,33 @@ const multer = require('multer');
 const path = require('path');
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'public/uploads/'); 
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname); 
-    const fileName = Date.now() + ext; 
-    cb(null, fileName); 
-  }
+  destination: (req, file, cb) => cb(null, 'public/uploads/'),
+  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
 });
-
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
 exports.updateProviderProfile = [
   upload.single('image'),
   async (req, res, next) => {
     try {
       const providerId = req.params.providerId;
+      if (!providerId) return res.status(400).json({ error: 'Provider ID is required in URL' });
+
       const { professional_headline } = req.body;
+      const updatePayload = {};
 
-      if (!providerId) {
-        return res.status(400).json({ error: 'Provider ID is required in URL' });
+      if (typeof professional_headline !== 'undefined') {
+        updatePayload.professional_headline = professional_headline;
       }
 
-      let imageUrl = null;
       if (req.file) {
-        imageUrl = `/uploads/${req.file.filename}`;
+        updatePayload.image = `/uploads/${req.file.filename}`;
       }
 
-      const updatedProvider = await ProviderModel.updateProfile(providerId, {
-        image: imageUrl,
-        professional_headline
-      });
-
+      const updatedProvider = await ProviderModel.updateProfile(providerId, updatePayload);
       return successResponse(res, { provider: updatedProvider }, 'Profile updated successfully');
     } catch (err) {
-      next(err); 
+      next(err);
     }
   }
 ];
-
