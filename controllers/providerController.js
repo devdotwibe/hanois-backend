@@ -286,19 +286,22 @@ exports.updateProvider = async (req, res, next) => {
 
 const multer = require('multer');
 const path = require('path');
-
+const fs = require('fs').promises; // using promises API
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'public/uploads/'); 
+    cb(null, 'public/uploads/');
   },
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname); 
-    const fileName = Date.now() + ext; 
-    cb(null, fileName); 
+    const ext = path.extname(file.originalname);
+    const fileName = Date.now() + ext;
+    cb(null, fileName);
   }
 });
-
 const upload = multer({ storage: storage });
+
+// Example ProviderModel API we expect:
+// ProviderModel.findById(providerId) -> returns provider doc/object
+// ProviderModel.update(providerId, updateObj) -> returns updated provider
 
 exports.updateProviderProfile = [
   upload.single('image'),
@@ -306,25 +309,69 @@ exports.updateProviderProfile = [
     try {
       const providerId = req.params.providerId;
       const { professional_headline } = req.body;
+      // remove_image expected '1' or '0'
+      const removeImageFlag = req.body.remove_image === '1';
 
       if (!providerId) {
         return res.status(400).json({ error: 'Provider ID is required in URL' });
       }
 
-      let imageUrl = null;
-      if (req.file) {
-        imageUrl = `/uploads/${req.file.filename}`;
+      // load existing provider (so we can remove old file if needed)
+      const existingProvider = await ProviderModel.findById(providerId);
+      if (!existingProvider) {
+        return res.status(404).json({ error: 'Provider not found' });
       }
 
-      const updatedProvider = await ProviderModel.updateProfile(providerId, {
-        image: imageUrl,
-        professional_headline
-      });
+      // build update object
+      const updates = {};
+
+      // if a new file uploaded -> delete old file (if exists) and set new path
+      if (req.file) {
+        // delete previous file from disk if it was a local file
+        if (existingProvider.image) {
+          // existingProvider.image might be "/uploads/123.jpg" or full URL
+          // handle only local uploads path
+          const prevPath = existingProvider.image.startsWith('/uploads/')
+            ? path.join(process.cwd(), 'public', existingProvider.image)
+            : null;
+          if (prevPath) {
+            try {
+              await fs.unlink(prevPath);
+            } catch (err) {
+              // ignore if file doesn't exist, but log
+              console.warn('Could not delete previous image file:', prevPath, err.message);
+            }
+          }
+        }
+        updates.image = `/uploads/${req.file.filename}`; // store relative path like before
+      } else if (removeImageFlag) {
+        // remove flag -> delete previous file and set DB image to null
+        if (existingProvider.image && existingProvider.image.startsWith('/uploads/')) {
+          const prevPath = path.join(process.cwd(), 'public', existingProvider.image);
+          try {
+            await fs.unlink(prevPath);
+          } catch (err) {
+            console.warn('Could not delete previous image file:', prevPath, err.message);
+          }
+        }
+        updates.image = null;
+      }
+      // update headline only if provided (could be empty string intentionally)
+      if (typeof professional_headline !== 'undefined') {
+        updates.professional_headline = professional_headline;
+      }
+
+      // if no changes, return existing provider (or you can respond 400)
+      if (Object.keys(updates).length === 0) {
+        return res.json({ data: { provider: existingProvider }, message: 'No changes' });
+      }
+
+      // persist update (adapt to your actual model API)
+      const updatedProvider = await ProviderModel.update(providerId, updates);
 
       return successResponse(res, { provider: updatedProvider }, 'Profile updated successfully');
     } catch (err) {
-      next(err); 
+      next(err);
     }
   }
 ];
-
