@@ -7,9 +7,7 @@ const { registerProvider,
     deleteProvider,
     updateProvider,
     getProviderById,
-    updateProviderProfile,
-    updateProviderImage,
-    updateProviderHeadline
+    updateProviderProfile
 } = require('../controllers/providerController');
 const { providerValidation } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
@@ -28,20 +26,6 @@ router.put('/:id', authenticateToken, updateProvider);
 router.get('/:id', authenticateToken, getProviderById);
 
 router.put('/update-profile/:providerId', authenticateToken, updateProviderProfile);
-
-
-router.put(
-  "/update-image/:providerId",
-  authenticateToken,
-  updateProviderImage
-);
-
-router.put(
-  "/update-headline/:providerId",
-  authenticateToken,
-  updateProviderHeadline
-);
-
 
 
 
