@@ -2,17 +2,23 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const router = express.Router();
-
 const { createPage, getListed } = require("../controllers/PageController");
 
 /* ======================================================
-   🟩 MULTER STORAGE CONFIGURATION
+   🟩 MULTER STORAGE CONFIGURATION (Dynamic Folder)
    ====================================================== */
-
-// Store uploaded card images under /public/uploads/cards
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, "../public/uploads/cards");
+    // Default upload folder
+    let uploadDir = path.join(__dirname, "../public/uploads/cards");
+
+    // 🟨 Detect folder based on sectionKey (for Handis)
+    const sectionKey = req.body?.sectionKey || req.query?.sectionKey;
+    if (sectionKey === "get_listedhandis") {
+      uploadDir = path.join(__dirname, "../public/uploads/handis");
+    }
+
+    // Ensure the directory exists
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
@@ -25,21 +31,23 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 /* ======================================================
-   🟩 ROUTES — GET LISTED PAGE
+   🟩 ROUTES — GET LISTED PAGE / HANDIS PAGE
    ====================================================== */
 
 /**
  * @route POST /api/page/save
- * @desc Save "Get Listed" content or cards (with/without images)
- * - If sectionKey === "get_listed" → Saves main section text.
- * - If sectionKey === "get_banner_cards" → Saves cards & images.
+ * @desc Handles:
+ * - "get_listed"       → Main text content
+ * - "get_banner_cards" → Card images (3 max)
+ * - "get_listedhandis" → Handis cards (2 max)
  */
 router.post(
   "/save",
   (req, res, next) => {
     const contentType = req.headers["content-type"] || "";
+
     if (contentType.startsWith("multipart/form-data")) {
-      upload.any()(req, res, next);
+      upload.any()(req, res, next); // parse form + files
     } else {
       next();
     }
@@ -49,8 +57,7 @@ router.post(
 
 /**
  * @route GET /api/page/get
- * @desc Get "Get Listed" content or card data
- * @query sectionKey=get_listed|get_banner_cards
+ * @desc Fetch "get_listed", "get_banner_cards", or "get_listedhandis"
  */
 router.get("/get", getListed);
 
