@@ -26,5 +26,22 @@ router.put('/:id', authenticateToken, updateProvider);
 router.get('/:id', authenticateToken, getProviderById);
 
 router.put('/update-profile/:providerId', authenticateToken, updateProviderProfile);
+
+
+router.put(
+  "/update-image/:providerId",
+  authenticateToken,
+  updateProviderImage
+);
+
+router.put(
+  "/update-headline/:providerId",
+  authenticateToken,
+  updateProviderHeadline
+);
+
+
+
+
 module.exports = router;
  
