@@ -11,6 +11,8 @@ const JWT_SECRET = "a3f9b0e1a8c2d34e5f67b89a0c1d2e3f4a5b6c7d8e9f0011223344556677
 const multer = require('multer');
 const path = require('path');
 
+const upload = multer({ storage: storage });
+
 exports.resetPassword = async (req, res, next) => {
   try {
     const { token, password } = req.body;
@@ -299,31 +301,32 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage: storage });
-
-// Route to update provider profile
 exports.updateProviderProfile = [
-  upload.single('image'), // Handling image upload
+  upload.single('image'), // Handle image upload
   async (req, res, next) => {
     try {
-      const providerId = req.providerId; // Assume providerId is in the request object
+      // Access providerId from the URL path
+      const providerId = req.params.providerId; // Get providerId from URL
       const { professional_headline } = req.body;
+
+      if (!providerId) {
+        return res.status(400).json({ error: 'Provider ID is required in URL' });
+      }
 
       let imageUrl = null;
       if (req.file) {
-        // If there's an image, use the path where the image is stored
-        imageUrl = `/uploads/${req.file.filename}`;
+        imageUrl = `/uploads/${req.file.filename}`; // Store the image URL if an image is uploaded
       }
 
-      // Update the provider's profile in the database
+      // Update the provider's profile with the new image and professional headline
       const updatedProvider = await ProviderModel.updateProfile(providerId, {
         image: imageUrl,
         professional_headline
       });
 
-      successResponse(res, { provider: updatedProvider }, 'Profile updated successfully');
+      return successResponse(res, { provider: updatedProvider }, 'Profile updated successfully');
     } catch (err) {
-      next(err);
+      next(err); // Pass error to the global error handler
     }
   }
 ];
