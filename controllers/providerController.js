@@ -302,11 +302,20 @@ exports.updateProviderProfile = [
   upload.single('image'),
   async (req, res, next) => {
     try {
-      // prefer provider id from auth middleware, fallback to param if you still use it
-      const providerId = (req.user && req.user.id) || req.params.providerId;
+      // Prefer explicit route param first (safe for admins editing others),
+      // fall back to authenticated user's id if param not present.
+      const providerId = req.params.providerId || (req.user && req.user.id);
       if (!providerId) {
         return res.status(400).json({ error: 'Provider ID not found' });
       }
+
+      // OPTIONAL: enforce that a non-admin can only update their own profile.
+      // Uncomment and adapt role check if you have roles in req.user:
+      /*
+      if (req.user && req.user.role !== 'admin' && req.params.providerId && String(req.user.id) !== String(req.params.providerId)) {
+        return res.status(403).json({ error: 'Forbidden: cannot update other provider profiles' });
+      }
+      */
 
       const { professional_headline } = req.body;
 

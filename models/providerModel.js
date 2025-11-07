@@ -50,7 +50,7 @@ class ProviderModel {
 
   static async findById(id) {
     const result = await pool.query(
-      "SELECT id, name, email, phone, created_at FROM users WHERE id = $1", 
+      "SELECT id, name, email, phone, created_at FROM providers WHERE id = $1",
       [id]
     );
     return result.rows[0];
@@ -79,17 +79,26 @@ class ProviderModel {
       values.push(hashedPassword);
     }
 
+    // If no fields to update, return current row
+    if (fields.length === 0) {
+      const existing = await pool.query(
+        "SELECT id, name, email, phone, created_at FROM providers WHERE id = $1",
+        [id]
+      );
+      return existing.rows[0];
+    }
+
     values.push(id);
 
     const result = await pool.query(
-      `UPDATE users SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING id, name, email, phone, created_at`,
+      `UPDATE providers SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING id, name, email, phone, created_at`,
       values
     );
     return result.rows[0];
   }
 
   static async deleteById(id) {
-    const result = await pool.query("DELETE FROM users WHERE id = $1 RETURNING id", [id]);
+    const result = await pool.query("DELETE FROM providers WHERE id = $1 RETURNING id", [id]);
     return result.rows[0];
   }
 
