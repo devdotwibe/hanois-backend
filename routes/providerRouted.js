@@ -24,5 +24,7 @@ router.put('/:id', authenticateToken, updateProvider);
 
 router.get('/:id', authenticateToken, getProviderById);
 
+router.put('/update-profile', authenticateToken, updateProviderProfile); // Protect route with authenticateToken middleware
+
 module.exports = router;
  

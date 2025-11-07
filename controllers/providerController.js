@@ -8,7 +8,8 @@ const { sendMail } = require('../config/mailer');
 const { validateEmail } = require('../utils/validateEmail');
 const pool = require("../db/pool");
 const JWT_SECRET = "a3f9b0e1a8c2d34e5f67b89a0c1d2e3f4a5b6c7d8e9f00112233445566778899";
-
+const multer = require('multer');
+const path = require('path');
 
 exports.resetPassword = async (req, res, next) => {
   try {
@@ -282,3 +283,47 @@ exports.updateProvider = async (req, res, next) => {
     next(err);
   }
 };
+
+
+
+
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'public/uploads/'); // Save uploaded images to this folder
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const fileName = Date.now() + ext;
+    cb(null, fileName);
+  }
+});
+
+const upload = multer({ storage: storage });
+
+// Route to update provider profile
+exports.updateProviderProfile = [
+  upload.single('image'), // Handling image upload
+  async (req, res, next) => {
+    try {
+      const providerId = req.providerId; // Assume providerId is in the request object
+      const { professional_headline } = req.body;
+
+      let imageUrl = null;
+      if (req.file) {
+        // If there's an image, use the path where the image is stored
+        imageUrl = `/uploads/${req.file.filename}`;
+      }
+
+      // Update the provider's profile in the database
+      const updatedProvider = await ProviderModel.updateProfile(providerId, {
+        image: imageUrl,
+        professional_headline
+      });
+
+      successResponse(res, { provider: updatedProvider }, 'Profile updated successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+];
