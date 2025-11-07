@@ -174,6 +174,68 @@ exports.createPage = async (req, res, next) => {
 
 
 
+    // Case 4️⃣ — Meaningfull Card (get_listedmeaningfull)
+if (sectionKey === "get_listedmeaningfull") {
+  const parentSection =
+    (await SectionModel.findByKey(sectionKey)) ||
+    (await SectionModel.create({ key: sectionKey }));
+
+  const files = req.files || [];
+  const body = req.body;
+
+  // Only 1 card required
+  const i = 1;
+  const meaningfull = body[`meaningfull_${i}`] || body[`meaningfull`] || "";
+  const imageFile = files.find((f) => f.fieldname === `meaningfull_${i}_image` || f.fieldname === `meaningfull_image`);
+
+  // If nothing submitted, return empty success (or you can throw)
+  if (!meaningfull && !imageFile) {
+    return successResponse(res, { cards: [] }, "No meaningful card data to save", 200);
+  }
+
+  const cardKey = `${sectionKey}_card_${i}`;
+  let section =
+    (await SectionModel.findByKey(cardKey)) ||
+    (await SectionModel.create({ key: cardKey, parent_key: sectionKey }));
+
+  // Text field
+  let textField = await FieldModel.findBySectionAndKey(section.id, "meaningfull");
+  if (!textField)
+    textField = await FieldModel.create({ section_id: section.id, key: "meaningfull", type: "text" });
+  await FieldTranslationModel.upsert(textField.id, "en", meaningfull || "");
+
+  // Image field
+  let imageField = await FieldModel.findBySectionAndKey(section.id, "meaningfullimage");
+  if (!imageField)
+    imageField = await FieldModel.create({ section_id: section.id, key: "meaningfullimage", type: "image" });
+
+  let imagePath = null;
+  if (imageFile && imageFile.size > 0) {
+    const destDir = path.join(__dirname, "../public/uploads/meaningfull");
+    if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+
+    const filename = `${Date.now()}-${imageFile.originalname}`;
+    const destPath = path.join(destDir, filename);
+    fs.renameSync(imageFile.path, destPath);
+
+    const BASE_URL = process.env.BASE_URL || "https://hanois.dotwibe.com/api";
+    imagePath = `${BASE_URL}/uploads/meaningfull/${filename}`;
+  }
+
+  await FieldTranslationModel.upsert(imageField.id, "en", imagePath || "");
+
+  const result = {
+    meaningfull,
+    image: imagePath,
+  };
+
+  return successResponse(res, { card: result }, "Meaningfull card saved successfully", 201);
+}
+
+
+
+
+
     throw new ValidationError("Invalid sectionKey");
   } catch (err) {
     // Cleanup temp files on failure
@@ -255,6 +317,28 @@ exports.getListed = async (req, res, next) => {
       return successResponse(res, { cards }, "Handis cards fetched successfully");
     }
     
+
+
+    // Case 4: Meaningfull Card
+if (sectionKey === "get_listedmeaningfull") {
+  const subKey = `${sectionKey}_card_1`;
+  const subSection = await SectionModel.findByKey(subKey);
+  if (!subSection) return successResponse(res, { card: null }, "No meaningful card found");
+
+  const textField = await FieldModel.findBySectionAndKey(subSection.id, "meaningfull");
+  const imageField = await FieldModel.findBySectionAndKey(subSection.id, "meaningfullimage");
+
+  const card = {
+    meaningfull: (await FieldTranslationModel.find(textField.id, "en"))?.value || "",
+    image: (await FieldTranslationModel.find(imageField.id, "en"))?.value || "",
+  };
+
+  return successResponse(res, { card }, "Meaningfull card fetched successfully");
+}
+
+
+
+
     return successResponse(res, {}, "Section fetched successfully");
   } catch (err) {
     next(err);
