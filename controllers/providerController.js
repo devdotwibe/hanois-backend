@@ -302,43 +302,39 @@ exports.updateProviderProfile = [
   upload.single('image'),
   async (req, res, next) => {
     try {
-      // Prefer explicit route param first (safe for admins editing others),
-      // fall back to authenticated user's id if param not present.
       const providerId = req.params.providerId || (req.user && req.user.id);
       if (!providerId) {
         return res.status(400).json({ error: 'Provider ID not found' });
       }
 
-      // OPTIONAL: enforce that a non-admin can only update their own profile.
-      // Uncomment and adapt role check if you have roles in req.user:
-      /*
-      if (req.user && req.user.role !== 'admin' && req.params.providerId && String(req.user.id) !== String(req.params.providerId)) {
-        return res.status(403).json({ error: 'Forbidden: cannot update other provider profiles' });
-      }
-      */
-
-      const { professional_headline } = req.body;
-
-      // Build update object conditionally
+      const { professional_headline, remove_image } = req.body;
       const updateData = {};
+
+      // Only update headline if sent
       if (typeof professional_headline !== 'undefined') {
         updateData.professional_headline = professional_headline;
       }
+
+      // If an image file is uploaded
       if (req.file) {
-        // Save path relative to public served folder
         updateData.image = `/uploads/${req.file.filename}`;
       }
 
-      // If nothing to update
+      // If explicit request to remove image
+      if (remove_image === '1' || remove_image === 'true') {
+        updateData.image = null;
+      }
+
+      // If nothing to update, return current record
       if (Object.keys(updateData).length === 0) {
-        return res.status(400).json({ error: 'No data provided to update' });
+        const existing = await ProviderModel.findById(providerId);
+        return res.json({ provider: existing, message: 'Nothing changed' });
       }
 
       const updatedProvider = await ProviderModel.updateProfile(providerId, updateData);
-
-      return successResponse(res, { provider: updatedProvider }, 'Profile updated successfully');
+      return res.json({ data: { provider: updatedProvider }, message: 'Profile updated successfully' });
     } catch (err) {
       next(err);
     }
-  }
+  },
 ];
