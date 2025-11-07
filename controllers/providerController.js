@@ -284,34 +284,49 @@ exports.updateProvider = async (req, res, next) => {
 
 
 
+// controller (e.g. providerController.js)
 const multer = require('multer');
 const path = require('path');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'public/uploads/'),
-  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, Date.now() + ext);
+  }
 });
+
 const upload = multer({ storage });
 
 exports.updateProviderProfile = [
   upload.single('image'),
   async (req, res, next) => {
     try {
-      const providerId = req.params.providerId;
-      if (!providerId) return res.status(400).json({ error: 'Provider ID is required in URL' });
+      // prefer provider id from auth middleware, fallback to param if you still use it
+      const providerId = (req.user && req.user.id) || req.params.providerId;
+      if (!providerId) {
+        return res.status(400).json({ error: 'Provider ID not found' });
+      }
 
       const { professional_headline } = req.body;
-      const updatePayload = {};
 
+      // Build update object conditionally
+      const updateData = {};
       if (typeof professional_headline !== 'undefined') {
-        updatePayload.professional_headline = professional_headline;
+        updateData.professional_headline = professional_headline;
       }
-
       if (req.file) {
-        updatePayload.image = `/uploads/${req.file.filename}`;
+        // Save path relative to public served folder
+        updateData.image = `/uploads/${req.file.filename}`;
       }
 
-      const updatedProvider = await ProviderModel.updateProfile(providerId, updatePayload);
+      // If nothing to update
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ error: 'No data provided to update' });
+      }
+
+      const updatedProvider = await ProviderModel.updateProfile(providerId, updateData);
+
       return successResponse(res, { provider: updatedProvider }, 'Profile updated successfully');
     } catch (err) {
       next(err);

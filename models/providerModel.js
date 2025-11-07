@@ -93,37 +93,42 @@ class ProviderModel {
     return result.rows[0];
   }
 
-   static async updateProfile(providerId, data) {
-    const fields = [];
-    const values = [];
-    let paramIndex = 1;
+// ProviderModel.updateProfile
+static async updateProfile(providerId, data) {
+  const fields = [];
+  const values = [];
+  let idx = 1;
 
-    if (data.image !== undefined) {
-      fields.push(`image = $${paramIndex++}`);
-      values.push(data.image);
-    }
-    if (data.professional_headline !== undefined) {
-      fields.push(`professional_headline = $${paramIndex++}`);
-      values.push(data.professional_headline);
-    }
+  if (data.image !== undefined) {
+    fields.push(`image = $${idx++}`);
+    values.push(data.image);
+  }
+  if (data.professional_headline !== undefined) {
+    fields.push(`professional_headline = $${idx++}`);
+    values.push(data.professional_headline);
+  }
 
-    // If nothing to update, return current provider row
-    if (fields.length === 0) {
-      const res = await pool.query(
-        "SELECT id, name, email, image, professional_headline FROM providers WHERE id = $1",
-        [providerId]
-      );
-      return res.rows[0];
-    }
-
-    values.push(providerId);
+  if (fields.length === 0) {
+    // Nothing to update
     const result = await pool.query(
-      `UPDATE providers SET ${fields.join(", ")} WHERE id = $${paramIndex} RETURNING id, name, email, image, professional_headline`,
-      values
+      "SELECT id, name, email, image, professional_headline FROM providers WHERE id = $1",
+      [providerId]
     );
-
     return result.rows[0];
   }
+
+  values.push(providerId);
+
+  const result = await pool.query(
+    `UPDATE providers
+     SET ${fields.join(', ')}
+     WHERE id = $${idx}
+     RETURNING id, name, email, image, professional_headline`,
+    values
+  );
+
+  return result.rows[0];
+}
 
 }
 
