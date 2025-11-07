@@ -264,8 +264,8 @@ exports.updateProvider = async (req, res, next) => {
       service,
       website,
       social_media,
-      categories_id,  // expect array of IDs
-      service_id,     // expect array of IDs
+      categories_id, 
+      service_id,    
       notes,
       facebook,
       instagram,
@@ -287,26 +287,24 @@ exports.updateProvider = async (req, res, next) => {
 const multer = require('multer');
 const path = require('path');
 
-// Define the storage configuration for multer (move this to the top)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'public/uploads/'); // Specify the folder where files will be stored
+    cb(null, 'public/uploads/'); 
   },
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname); // Get the file extension
-    const fileName = Date.now() + ext; // Generate a unique filename using the current timestamp
-    cb(null, fileName); // Set the filename
+    const ext = path.extname(file.originalname); 
+    const fileName = Date.now() + ext; 
+    cb(null, fileName); 
   }
 });
 
-// Initialize multer with the storage configuration
 const upload = multer({ storage: storage });
 
 exports.updateProviderProfile = [
-  upload.single('image'), // Handle image upload
+  upload.single('image'),
   async (req, res, next) => {
     try {
-      const providerId = req.params.providerId; // Get providerId from URL
+      const providerId = req.params.providerId;
       const { professional_headline } = req.body;
 
       if (!providerId) {
@@ -315,10 +313,9 @@ exports.updateProviderProfile = [
 
       let imageUrl = null;
       if (req.file) {
-        imageUrl = `/uploads/${req.file.filename}`; // Store the image URL if an image is uploaded
+        imageUrl = `/uploads/${req.file.filename}`;
       }
 
-      // Update the provider's profile with the new image and professional headline
       const updatedProvider = await ProviderModel.updateProfile(providerId, {
         image: imageUrl,
         professional_headline
@@ -326,7 +323,7 @@ exports.updateProviderProfile = [
 
       return successResponse(res, { provider: updatedProvider }, 'Profile updated successfully');
     } catch (err) {
-      next(err); // Pass error to the global error handler
+      next(err); 
     }
   }
 ];
