@@ -9,7 +9,6 @@ const { validateEmail } = require('../utils/validateEmail');
 const pool = require("../db/pool");
 const JWT_SECRET = "a3f9b0e1a8c2d34e5f67b89a0c1d2e3f4a5b6c7d8e9f00112233445566778899";
 
-
 exports.resetPassword = async (req, res, next) => {
   try {
     const { token, password } = req.body;
@@ -265,8 +264,8 @@ exports.updateProvider = async (req, res, next) => {
       service,
       website,
       social_media,
-      categories_id,  // expect array of IDs
-      service_id,     // expect array of IDs
+      categories_id, 
+      service_id,    
       notes,
       facebook,
       instagram,
@@ -282,3 +281,50 @@ exports.updateProvider = async (req, res, next) => {
     next(err);
   }
 };
+
+
+
+const multer = require('multer');
+const path = require('path');
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'public/uploads/'); 
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname); 
+    const fileName = Date.now() + ext; 
+    cb(null, fileName); 
+  }
+});
+
+const upload = multer({ storage: storage });
+
+exports.updateProviderProfile = [
+  upload.single('image'),
+  async (req, res, next) => {
+    try {
+      const providerId = req.params.providerId;
+      const { professional_headline } = req.body;
+
+      if (!providerId) {
+        return res.status(400).json({ error: 'Provider ID is required in URL' });
+      }
+
+      let imageUrl = null;
+      if (req.file) {
+        imageUrl = `/uploads/${req.file.filename}`;
+      }
+
+      const updatedProvider = await ProviderModel.updateProfile(providerId, {
+        image: imageUrl,
+        professional_headline
+      });
+
+      return successResponse(res, { provider: updatedProvider }, 'Profile updated successfully');
+    } catch (err) {
+      next(err); 
+    }
+  }
+];
+

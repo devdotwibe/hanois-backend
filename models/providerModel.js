@@ -92,6 +92,20 @@ class ProviderModel {
     const result = await pool.query("DELETE FROM users WHERE id = $1 RETURNING id", [id]);
     return result.rows[0];
   }
+
+    static async updateProfile(providerId, data) {
+    const { image, professional_headline } = data;
+
+    const result = await pool.query(
+      `UPDATE providers 
+       SET image = $1, professional_headline = $2 
+       WHERE id = $3 
+       RETURNING id, name, email, image, professional_headline`,
+      [image, professional_headline, providerId]
+    );
+
+    return result.rows[0];
+  }
 }
 
 module.exports = ProviderModel;
