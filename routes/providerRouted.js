@@ -6,7 +6,8 @@ const { registerProvider,
     getProviders,
     deleteProvider,
     updateProvider,
-    getProviderById
+    getProviderById,
+    updateProviderProfile
 } = require('../controllers/providerController');
 const { providerValidation } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
