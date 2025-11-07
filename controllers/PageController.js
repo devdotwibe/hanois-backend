@@ -254,8 +254,6 @@ exports.getListed = async (req, res, next) => {
 
       return successResponse(res, { cards }, "Handis cards fetched successfully");
     }
-
-
     
     return successResponse(res, {}, "Section fetched successfully");
   } catch (err) {
