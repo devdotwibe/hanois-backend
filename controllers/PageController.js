@@ -269,6 +269,94 @@ if (sectionKey === "get_listedmeaningfull") {
 
 
 
+if (sectionKey === "get_banner_cards") {
+  const parentSection =
+    (await SectionModel.findByKey(sectionKey)) ||
+    (await SectionModel.create({ key: sectionKey }));
+
+  const files = req.files || [];
+  const body = req.body;
+  const cards = [];
+
+  for (let i = 1; i <= 3; i++) {
+    const title_en = body[`card_${i}_title_en`];
+    const title_ar = body[`card_${i}_title_ar`];
+    const content_en = body[`card_${i}_content_en`];
+    const content_ar = body[`card_${i}_content_ar`];
+    const imageFile = files.find((f) => f.fieldname === `card_${i}_image`);
+
+    if (!title_en && !content_en && !imageFile) continue;
+
+    const cardKey = `${sectionKey}_card_${i}`;
+    let section =
+      (await SectionModel.findByKey(cardKey)) ||
+      (await SectionModel.create({ key: cardKey, parent_key: sectionKey }));
+
+    // Title
+    let titleField =
+      (await FieldModel.findBySectionAndKey(section.id, "title")) ||
+      (await FieldModel.create({ section_id: section.id, key: "title", type: "text" }));
+    await FieldTranslationModel.upsert(titleField.id, "en", title_en || "");
+    await FieldTranslationModel.upsert(titleField.id, "ar", title_ar || "");
+
+    // Content
+    let contentField =
+      (await FieldModel.findBySectionAndKey(section.id, "content")) ||
+      (await FieldModel.create({ section_id: section.id, key: "content", type: "text" }));
+    await FieldTranslationModel.upsert(contentField.id, "en", content_en || "");
+    await FieldTranslationModel.upsert(contentField.id, "ar", content_ar || "");
+
+    // Image
+    let imageField =
+      (await FieldModel.findBySectionAndKey(section.id, "image")) ||
+      (await FieldModel.create({ section_id: section.id, key: "image", type: "image" }));
+
+    let imagePath = null;
+    if (imageFile && imageFile.size > 0) {
+      const destDir = path.join(__dirname, "../public/uploads/banner_cards");
+      if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+
+      const filename = `${Date.now()}-${imageFile.originalname}`;
+      const destPath = path.join(destDir, filename);
+      fs.renameSync(imageFile.path, destPath);
+
+      imagePath = `uploads/banner_cards/${filename}`;
+      await FieldTranslationModel.upsert(imageField.id, "en", imagePath);
+    }
+
+    // Retain old image if not replaced
+    const existingImage =
+      imagePath ||
+      (await FieldTranslationModel.find(imageField.id, "en"))?.value ||
+      "";
+
+    cards.push({
+      title_en,
+      title_ar,
+      content_en,
+      content_ar,
+      image: existingImage,
+    });
+  }
+
+  return successResponse(res, { cards }, "Banner cards saved successfully", 201);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     throw new ValidationError("Invalid sectionKey");
   } catch (err) {
     // Cleanup temp files on failure
