@@ -112,7 +112,8 @@ if (sectionKey === "get_banner_cards") {
       const destPath = path.join(destDir, filename);
       fs.renameSync(imageFile.path, destPath);
 
-      imagePath = `${BASE_URL}/uploads/cards/${filename}`;
+     imagePath = `uploads/cards/${filename}`;
+
     }
 
     // ✅ Only update image if new one uploaded
