@@ -7,7 +7,8 @@ const { registerProvider,
     deleteProvider,
     updateProvider,
     getProviderById,
-    updateProviderProfile
+    updateProviderProfile,
+    getAllProviderServices
 } = require('../controllers/providerController');
 const { providerValidation } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
@@ -27,6 +28,7 @@ router.get('/:id', authenticateToken, getProviderById);
 
 router.put('/update-profile/:providerId', authenticateToken, updateProviderProfile);
 
+router.get('/all-provider-services', getAllProviderServices);
 
 
 module.exports = router;

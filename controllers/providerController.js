@@ -418,3 +418,62 @@ exports.updateProviderProfile = [
   }
 ];
 
+
+
+// 🔍 Fetch all provider_services (for debugging / testing, no auth required)
+exports.getAllProviderServices = async (req, res, next) => {
+  try {
+    const { providerId, serviceId } = req.query; // optional query filters
+
+    let query = `
+      SELECT 
+        ps.id,
+        ps.provider_id,
+        p.name AS provider_name,
+        ps.service_id,
+        s.name AS service_name,
+        ps.average_cost,
+        ps.currency,
+        ps.service_note,
+        ps.created_at,
+        ps.updated_at
+      FROM provider_services ps
+      LEFT JOIN providers p ON ps.provider_id = p.id
+      LEFT JOIN services s ON ps.service_id = s.id
+    `;
+
+    const params = [];
+    const conditions = [];
+
+    if (providerId) {
+      params.push(providerId);
+      conditions.push(`ps.provider_id = $${params.length}`);
+    }
+
+    if (serviceId) {
+      params.push(serviceId);
+      conditions.push(`ps.service_id = $${params.length}`);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(" AND ")}`;
+    }
+
+    query += " ORDER BY ps.created_at DESC";
+
+    const result = await pool.query(query, params);
+
+    res.json({
+      success: true,
+      count: result.rowCount,
+      data: result.rows,
+    });
+  } catch (err) {
+    console.error("❌ Error fetching provider_services:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch provider_services",
+      details: err.message,
+    });
+  }
+};
