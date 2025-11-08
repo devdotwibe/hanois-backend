@@ -19,10 +19,6 @@ exports.createFaq = async (req, res, next) => {
       arabanswer,
     } = req.body;
 
-    // ✅ Validate required English fields
-    if (!engquestion || !enganswer) {
-      throw new ValidationError("English question and answer are required.");
-    }
 
     // ✅ Ensure 'faq_content' post exists
     let post = await PostModel.findByName("faq_content");
