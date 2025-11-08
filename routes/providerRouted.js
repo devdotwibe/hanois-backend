@@ -23,7 +23,7 @@ router.delete('/:id', authenticateToken, deleteProvider);
 
 router.put('/:id', authenticateToken, updateProvider);
 
-// router.get('/:id', authenticateToken, getProviderById);
+router.get('/:id', authenticateToken, getProviderById);
 
 router.put('/update-profile/:providerId', authenticateToken, updateProviderProfile);
 
