@@ -48,13 +48,36 @@ class ProviderModel {
     return result.rows[0];
   }
 
-  static async findById(id) {
-    const result = await pool.query(
-      "SELECT id, name, email, phone, created_at FROM providers WHERE id = $1",
-      [id]
-    );
-    return result.rows[0];
-  }
+// providerModel.js
+
+static async findById(id) {
+  const result = await pool.query(
+    `SELECT
+       id,
+       name,
+       email,
+       phone,
+       location,
+       team_size,
+       service,
+       website,
+       social_media,
+       notes,
+       facebook,
+       instagram,
+       other_link,
+       professional_headline,
+       image,
+       categories_id,
+       service_id,
+       created_at
+     FROM providers
+     WHERE id = $1`,
+    [id]
+  );
+  return result.rows[0];
+}
+
 
 static async updateById(id, data) {
   const fields = [];
