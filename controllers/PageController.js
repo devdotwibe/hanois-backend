@@ -42,77 +42,104 @@ exports.createPage = async (req, res, next) => {
       return successResponse(res, { sectionKey, titles, content }, "Page saved successfully", 201);
     }
 
-    // Case 2️⃣ — Cards (get_banner_cards)
-    if (sectionKey === "get_banner_cards") {
-      const parentSection =
-        (await SectionModel.findByKey(sectionKey)) || (await SectionModel.create({ key: sectionKey }));
+// Case 2️⃣ — Cards (get_banner_cards)
+if (sectionKey === "get_banner_cards") {
+  const parentSection =
+    (await SectionModel.findByKey(sectionKey)) ||
+    (await SectionModel.create({ key: sectionKey }));
 
-      const files = req.files || [];
-      const body = req.body;
+  const files = req.files || [];
+  const body = req.body;
 
-      const cards = [];
+  const cards = [];
 
-      for (let i = 1; i <= 3; i++) {
-        const title_en = body[`card_${i}_title_en`];
-        const title_ar = body[`card_${i}_title_ar`];
-        const content_en = body[`card_${i}_content_en`];
-        const content_ar = body[`card_${i}_content_ar`];
-        const imageFile = files.find(f => f.fieldname === `card_${i}_image`);
+  for (let i = 1; i <= 3; i++) {
+    const title_en = body[`card_${i}_title_en`];
+    const title_ar = body[`card_${i}_title_ar`];
+    const content_en = body[`card_${i}_content_en`];
+    const content_ar = body[`card_${i}_content_ar`];
+    const imageFile = files.find((f) => f.fieldname === `card_${i}_image`);
 
-        if (!title_en && !title_ar && !content_en && !content_ar && !imageFile) continue;
+    // Skip if everything empty
+    if (!title_en && !title_ar && !content_en && !content_ar && !imageFile) continue;
 
-        const cardKey = `${sectionKey}_card_${i}`;
-        let section =
-          (await SectionModel.findByKey(cardKey)) ||
-          (await SectionModel.create({ key: cardKey, parent_key: sectionKey }));
+    const cardKey = `${sectionKey}_card_${i}`;
+    let section =
+      (await SectionModel.findByKey(cardKey)) ||
+      (await SectionModel.create({ key: cardKey, parent_key: sectionKey }));
 
-        // Title
-        let titleField = await FieldModel.findBySectionAndKey(section.id, "title");
-        if (!titleField)
-          titleField = await FieldModel.create({ section_id: section.id, key: "title", type: "text" });
+    // 🟩 Title
+    let titleField = await FieldModel.findBySectionAndKey(section.id, "title");
+    if (!titleField)
+      titleField = await FieldModel.create({
+        section_id: section.id,
+        key: "title",
+        type: "text",
+      });
 
-        await FieldTranslationModel.upsert(titleField.id, "en", title_en || "");
-        await FieldTranslationModel.upsert(titleField.id, "ar", title_ar || "");
+    await FieldTranslationModel.upsert(titleField.id, "en", title_en || "");
+    await FieldTranslationModel.upsert(titleField.id, "ar", title_ar || "");
 
-        // Content
-        let contentField = await FieldModel.findBySectionAndKey(section.id, "content");
-        if (!contentField)
-          contentField = await FieldModel.create({ section_id: section.id, key: "content", type: "text" });
+    // 🟩 Content
+    let contentField = await FieldModel.findBySectionAndKey(section.id, "content");
+    if (!contentField)
+      contentField = await FieldModel.create({
+        section_id: section.id,
+        key: "content",
+        type: "text",
+      });
 
-        await FieldTranslationModel.upsert(contentField.id, "en", content_en || "");
-        await FieldTranslationModel.upsert(contentField.id, "ar", content_ar || "");
+    await FieldTranslationModel.upsert(contentField.id, "en", content_en || "");
+    await FieldTranslationModel.upsert(contentField.id, "ar", content_ar || "");
 
-        // Image
-        let imageField = await FieldModel.findBySectionAndKey(section.id, "image");
-        if (!imageField)
-          imageField = await FieldModel.create({ section_id: section.id, key: "image", type: "image" });
+    // 🟩 Image
+    let imageField = await FieldModel.findBySectionAndKey(section.id, "image");
+    if (!imageField)
+      imageField = await FieldModel.create({
+        section_id: section.id,
+        key: "image",
+        type: "image",
+      });
 
-        let imagePath = null;
-        if (imageFile && imageFile.size > 0) {
-          const destDir = path.join(__dirname, "../public/uploads/cards");
-          if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+    let imagePath = null;
 
-          const filename = `${Date.now()}-${imageFile.originalname}`;
-          const destPath = path.join(destDir, filename);
-          fs.renameSync(imageFile.path, destPath);
+    // ✅ If a new image file is uploaded, move and save it
+    if (imageFile && imageFile.size > 0) {
+      const destDir = path.join(__dirname, "../public/uploads/cards");
+      if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
 
-          imagePath = `${BASE_URL}/uploads/cards/${filename}`;
-        }
+      const filename = `${Date.now()}-${imageFile.originalname}`;
+      const destPath = path.join(destDir, filename);
+      fs.renameSync(imageFile.path, destPath);
 
-        await FieldTranslationModel.upsert(imageField.id, "en", imagePath || "");
-        await FieldTranslationModel.upsert(imageField.id, "ar", imagePath || "");
-
-        cards.push({
-          title_en,
-          title_ar,
-          content_en,
-          content_ar,
-          image: imagePath,
-        });
-      }
-
-      return successResponse(res, { cards }, "Cards saved successfully", 201);
+      imagePath = `${BASE_URL}/uploads/cards/${filename}`;
     }
+
+    // ✅ Only update image if new one uploaded
+    // Prevents clearing existing image when form saved without re-uploading
+    if (imagePath) {
+      await FieldTranslationModel.upsert(imageField.id, "en", imagePath);
+      await FieldTranslationModel.upsert(imageField.id, "ar", imagePath);
+    }
+
+    // 🟩 Fetch existing image (if no new upload) to return in response
+    const existingImage =
+      imagePath ||
+      (await FieldTranslationModel.find(imageField.id, "en"))?.value ||
+      "";
+
+    // 🟩 Push to response array
+    cards.push({
+      title_en,
+      title_ar,
+      content_en,
+      content_ar,
+      image: existingImage,
+    });
+  }
+
+  return successResponse(res, { cards }, "Cards saved successfully", 201);
+}
 
 
         if (sectionKey === "get_listedhandis") {
