@@ -42,9 +42,7 @@ exports.createPage = async (req, res, next) => {
       return successResponse(res, { sectionKey, titles, content }, "Page saved successfully", 201);
     }
 
-// Case 2️⃣ — Cards (get_banner_cards)
-// Case 2️⃣ — Cards (get_banner_cards)
-if (sectionKey === "get_banner_cards") {
+if (sectionKey === "get_listedhandis") {
   const parentSection =
     (await SectionModel.findByKey(sectionKey)) ||
     (await SectionModel.create({ key: sectionKey }));
@@ -53,14 +51,12 @@ if (sectionKey === "get_banner_cards") {
   const body = req.body;
   const cards = [];
 
-  for (let i = 1; i <= 3; i++) {
-    const title_en = body[`card_${i}_title_en`];
-    const title_ar = body[`card_${i}_title_ar`];
-    const content_en = body[`card_${i}_content_en`];
-    const content_ar = body[`card_${i}_content_ar`];
-    const imageFile = files.find((f) => f.fieldname === `card_${i}_image`);
+  for (let i = 1; i <= 2; i++) {
+    const handistitle = body[`handis_${i}_title`];
+    const handisbuttonname = body[`handis_${i}_buttonname`];
+    const imageFile = files.find((f) => f.fieldname === `handis_${i}_image`);
 
-    if (!title_en && !title_ar && !content_en && !content_ar && !imageFile) continue;
+    if (!handistitle && !handisbuttonname && !imageFile) continue;
 
     const cardKey = `${sectionKey}_card_${i}`;
     let section =
@@ -68,76 +64,66 @@ if (sectionKey === "get_banner_cards") {
       (await SectionModel.create({ key: cardKey, parent_key: sectionKey }));
 
     // 🟩 Title
-    let titleField = await FieldModel.findBySectionAndKey(section.id, "title");
+    let titleField = await FieldModel.findBySectionAndKey(section.id, "handistitle");
     if (!titleField)
       titleField = await FieldModel.create({
         section_id: section.id,
-        key: "title",
+        key: "handistitle",
         type: "text",
       });
+    await FieldTranslationModel.upsert(titleField.id, "en", handistitle || "");
 
-    await FieldTranslationModel.upsert(titleField.id, "en", title_en || "");
-    await FieldTranslationModel.upsert(titleField.id, "ar", title_ar || "");
-
-    // 🟩 Content
-    let contentField = await FieldModel.findBySectionAndKey(section.id, "content");
-    if (!contentField)
-      contentField = await FieldModel.create({
+    // 🟩 Button Name
+    let buttonField = await FieldModel.findBySectionAndKey(section.id, "handisbuttonname");
+    if (!buttonField)
+      buttonField = await FieldModel.create({
         section_id: section.id,
-        key: "content",
+        key: "handisbuttonname",
         type: "text",
       });
-
-    await FieldTranslationModel.upsert(contentField.id, "en", content_en || "");
-    await FieldTranslationModel.upsert(contentField.id, "ar", content_ar || "");
+    await FieldTranslationModel.upsert(buttonField.id, "en", handisbuttonname || "");
 
     // 🟩 Image
-    let imageField = await FieldModel.findBySectionAndKey(section.id, "image");
+    let imageField = await FieldModel.findBySectionAndKey(section.id, "handisimage");
     if (!imageField)
       imageField = await FieldModel.create({
         section_id: section.id,
-        key: "image",
+        key: "handisimage",
         type: "image",
       });
 
     let imagePath = null;
-
-    // ✅ If new image uploaded → save to /uploads/cards/
     if (imageFile && imageFile.size > 0) {
-      const destDir = path.join(__dirname, "../public/uploads/cards");
+      const destDir = path.join(__dirname, "../public/uploads/handis");
       if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
 
       const filename = `${Date.now()}-${imageFile.originalname}`;
       const destPath = path.join(destDir, filename);
       fs.renameSync(imageFile.path, destPath);
 
-      // ✅ store relative path
-      imagePath = `uploads/cards/${filename}`;
+      // ✅ Save relative path (not full URL)
+      imagePath = `uploads/handis/${filename}`;
     }
 
-    // ✅ If a new image was uploaded, update DB.
-    // ✅ If not, keep old image.
+    // ✅ Update image only if a new one was uploaded
     if (imagePath) {
       await FieldTranslationModel.upsert(imageField.id, "en", imagePath);
-      await FieldTranslationModel.upsert(imageField.id, "ar", imagePath);
     }
 
-    // 🧠 Fetch current image (new or old)
+    // ✅ Use old image if not replaced
     const existingImage =
       imagePath ||
       (await FieldTranslationModel.find(imageField.id, "en"))?.value ||
       "";
 
     cards.push({
-      title_en,
-      title_ar,
-      content_en,
-      content_ar,
+      handistitle,
+      handisbuttonname,
       image: existingImage,
     });
   }
 
-  return successResponse(res, { cards }, "Cards saved successfully", 201);
+  return successResponse(res, { cards }, "Handis cards saved successfully", 201);
 }
 
 
