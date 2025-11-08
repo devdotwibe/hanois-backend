@@ -43,6 +43,7 @@ exports.createPage = async (req, res, next) => {
     }
 
 // Case 2️⃣ — Cards (get_banner_cards)
+// Case 2️⃣ — Cards (get_banner_cards)
 if (sectionKey === "get_banner_cards") {
   const parentSection =
     (await SectionModel.findByKey(sectionKey)) ||
@@ -50,7 +51,6 @@ if (sectionKey === "get_banner_cards") {
 
   const files = req.files || [];
   const body = req.body;
-
   const cards = [];
 
   for (let i = 1; i <= 3; i++) {
@@ -60,7 +60,6 @@ if (sectionKey === "get_banner_cards") {
     const content_ar = body[`card_${i}_content_ar`];
     const imageFile = files.find((f) => f.fieldname === `card_${i}_image`);
 
-    // Skip if everything empty
     if (!title_en && !title_ar && !content_en && !content_ar && !imageFile) continue;
 
     const cardKey = `${sectionKey}_card_${i}`;
@@ -103,7 +102,7 @@ if (sectionKey === "get_banner_cards") {
 
     let imagePath = null;
 
-    // ✅ If a new image file is uploaded, move and save it
+    // ✅ If new image uploaded → save to /uploads/cards/
     if (imageFile && imageFile.size > 0) {
       const destDir = path.join(__dirname, "../public/uploads/cards");
       if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
@@ -112,24 +111,23 @@ if (sectionKey === "get_banner_cards") {
       const destPath = path.join(destDir, filename);
       fs.renameSync(imageFile.path, destPath);
 
-     imagePath = `uploads/cards/${filename}`;
-
+      // ✅ store relative path
+      imagePath = `uploads/cards/${filename}`;
     }
 
-    // ✅ Only update image if new one uploaded
-    // Prevents clearing existing image when form saved without re-uploading
+    // ✅ If a new image was uploaded, update DB.
+    // ✅ If not, keep old image.
     if (imagePath) {
       await FieldTranslationModel.upsert(imageField.id, "en", imagePath);
       await FieldTranslationModel.upsert(imageField.id, "ar", imagePath);
     }
 
-    // 🟩 Fetch existing image (if no new upload) to return in response
+    // 🧠 Fetch current image (new or old)
     const existingImage =
       imagePath ||
       (await FieldTranslationModel.find(imageField.id, "en"))?.value ||
       "";
 
-    // 🟩 Push to response array
     cards.push({
       title_en,
       title_ar,
@@ -141,6 +139,7 @@ if (sectionKey === "get_banner_cards") {
 
   return successResponse(res, { cards }, "Cards saved successfully", 201);
 }
+
 
 
         if (sectionKey === "get_listedhandis") {
