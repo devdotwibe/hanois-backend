@@ -300,31 +300,142 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-exports.updateProviderProfile = [
-  upload.single('image'),
-  async (req, res, next) => {
-    try {
-      const providerId = req.params.providerId;
-      const { professional_headline } = req.body;
+exports.updateProvider = async (req, res, next) => {
+  const client = await pool.connect();
+  try {
+    const providerId = req.params.id;
+    if (!providerId) return errorResponse(res, "Provider ID is required", 400);
 
-      if (!providerId) {
-        return res.status(400).json({ error: 'Provider ID is required in URL' });
-      }
+    const {
+      name,
+      email,
+      phone,
+      password,
+      location,
+      team_size,
+      service,
+      website,
+      social_media,
+      categories_id,
+      service_id,        // optional array of service ids (strings or numbers)
+      service_details,   // optional array of { id | service_id, cost|average_cost, currency, note|service_note }
+      notes,
+      facebook,
+      instagram,
+      other_link
+    } = req.body;
 
-      let imageUrl = null;
-      if (req.file) {
-        imageUrl = `/uploads/${req.file.filename}`;
-      }
+    // Start transaction
+    await client.query("BEGIN");
 
-      const updatedProvider = await ProviderModel.updateProfile(providerId, {
-        image: imageUrl,
-        professional_headline
-      });
+    // 1) Update providers table using existing model function
+    const updatedProvider = await ProviderModel.updateById(providerId, {
+      name,
+      email,
+      phone,
+      password,
+      location,
+      team_size,
+      service,
+      website,
+      social_media,
+      categories_id,
+      service_id,
+      notes,
+      facebook,
+      instagram,
+      other_link
+    });
 
-      return successResponse(res, { provider: updatedProvider }, 'Profile updated successfully');
-    } catch (err) {
-      next(err); 
+    if (!updatedProvider) {
+      // nothing updated or provider not found
+      await client.query("ROLLBACK");
+      return errorResponse(res, "Nothing to update or provider not found", 404);
     }
+
+    // 2) If service_details is provided, upsert into provider_services
+    if (Array.isArray(service_details) && service_details.length > 0) {
+      for (const item of service_details) {
+        // accept either item.id or item.service_id
+        const rawServiceId = item.id ?? item.service_id;
+        const serviceId = Number(rawServiceId);
+        if (!serviceId || Number.isNaN(serviceId)) {
+          // skip invalid service id
+          console.warn(`Skipping invalid service id: ${rawServiceId}`);
+          continue;
+        }
+
+        // Normalise numeric cost (or null)
+        const rawCost = item.cost ?? item.average_cost ?? null;
+        const average_cost = rawCost !== undefined && rawCost !== null && rawCost !== "" ? Number(rawCost) : null;
+
+        const currency = (item.currency || item.curr || "KD")?.toString() ?? "KD";
+        const service_note = (item.note ?? item.service_note ?? null);
+
+        // try UPDATE first
+        const updateRes = await client.query(
+          `UPDATE provider_services
+           SET average_cost = $1,
+               currency = $2,
+               service_note = $3,
+               updated_at = NOW()
+           WHERE provider_id = $4 AND service_id = $5
+           RETURNING id`,
+          [average_cost, currency, service_note, providerId, serviceId]
+        );
+
+        if (updateRes.rowCount === 0) {
+          // not existed -> INSERT
+          await client.query(
+            `INSERT INTO provider_services
+             (provider_id, service_id, average_cost, currency, service_note, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, NOW(), NOW())`,
+            [providerId, serviceId, average_cost, currency, service_note]
+          );
+        }
+      }
+    }
+
+    // 3) Optional: if frontend sent a service_id array and you want to remove provider_services not in that list
+    // (uncomment the block below if you want that behavior)
+    if (Array.isArray(service_id)) {
+      // build list of integer ids
+      const keepIds = service_id
+        .map((s) => Number(s))
+        .filter((n) => !Number.isNaN(n));
+      if (keepIds.length > 0) {
+        // delete rows for this provider not included in keepIds
+        const placeholders = keepIds.map((_, i) => `$${i + 2}`).join(',');
+        // query args: [providerId, ...keepIds]
+        await client.query(
+          `DELETE FROM provider_services
+           WHERE provider_id = $1
+             AND service_id NOT IN (${placeholders})`,
+          [providerId, ...keepIds]
+        );
+      } else {
+        // if empty array provided, delete all provider services for this provider
+        await client.query(
+          `DELETE FROM provider_services WHERE provider_id = $1`,
+          [providerId]
+        );
+      }
+    }
+
+    // Commit everything
+    await client.query("COMMIT");
+
+    // You can optionally fetch the latest provider row to return
+    const latestProvider = await ProviderModel.findById(providerId);
+
+    successResponse(res, { provider: latestProvider }, "Provider updated successfully");
+  } catch (err) {
+    // Rollback on error
+    try { await client.query("ROLLBACK"); } catch (e) { console.error("Rollback failed:", e); }
+    next(err);
+  } finally {
+    client.release();
   }
-];
+};
+
 
