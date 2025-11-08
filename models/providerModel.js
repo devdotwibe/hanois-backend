@@ -56,46 +56,77 @@ class ProviderModel {
     return result.rows[0];
   }
 
-  static async updateById(id, data) {
-    const fields = [];
-    const values = [];
-    let paramIndex = 1;
+static async updateById(id, data) {
+  const fields = [];
+  const values = [];
+  let paramIndex = 1;
 
-    if (data.name) {
-      fields.push(`name = $${paramIndex++}`);
-      values.push(data.name);
-    }
-    if (data.email) {
-      fields.push(`email = $${paramIndex++}`);
-      values.push(data.email);
-    }
-    if (data.phone) {
-      fields.push(`phone = $${paramIndex++}`);
-      values.push(data.phone);
-    }
-    if (data.password) {
-      const hashedPassword = await bcrypt.hash(data.password, 10);
-      fields.push(`password = $${paramIndex++}`);
-      values.push(hashedPassword);
-    }
+  const addField = (columnName, value, opts = {}) => {
+    // opts.cast can be like '::jsonb' or '::int[]' if you need explicit casting
+    if (value === undefined) return;
+    fields.push(`${columnName} = $${paramIndex++}${opts.cast || ""}`);
+    values.push(value);
+  };
 
-    // If no fields to update, return current row
-    if (fields.length === 0) {
-      const existing = await pool.query(
-        "SELECT id, name, email, phone, created_at FROM providers WHERE id = $1",
-        [id]
-      );
-      return existing.rows[0];
-    }
+  addField('name', data.name);
+  addField('email', data.email);
+  addField('phone', data.phone);
 
-    values.push(id);
-
-    const result = await pool.query(
-      `UPDATE providers SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING id, name, email, phone, created_at`,
-      values
-    );
-    return result.rows[0];
+  if (data.password) {
+    const hashedPassword = await bcrypt.hash(data.password.toString(), 10);
+    addField('password', hashedPassword);
   }
+
+  addField('location', data.location);
+  addField('team_size', data.team_size !== undefined ? data.team_size : undefined);
+  addField('service', data.service);
+  addField('website', data.website);
+  addField('social_media', data.social_media);
+  addField('notes', data.notes);
+  addField('facebook', data.facebook);
+  addField('instagram', data.instagram);
+  addField('other_link', data.other_link || data.other);
+  addField('professional_headline', data.professional_headline);
+  addField('image', data.image);
+
+  // Handle categories_id / service_id arrays or json depending on your DB column type
+  if (data.categories_id !== undefined) {
+    // If your column is jsonb:
+    // addField('categories_id', JSON.stringify(data.categories_id), { cast: '::jsonb' });
+
+    // If your column is integer[] in Postgres, you can pass JS array directly:
+    addField('categories_id', data.categories_id);
+  }
+
+  if (data.service_id !== undefined) {
+    // If jsonb:
+    // addField('service_id', JSON.stringify(data.service_id), { cast: '::jsonb' });
+
+    // If integer[]:
+    addField('service_id', data.service_id);
+  }
+
+  // If no fields to update, return the existing row so caller can decide
+  if (fields.length === 0) {
+    const existing = await pool.query(
+      "SELECT id, name, email, phone, location, team_size, service, website, social_media, notes, facebook, instagram, other_link, professional_headline, image, categories_id, service_id, created_at FROM providers WHERE id = $1",
+      [id]
+    );
+    return existing.rows[0];
+  }
+
+  // push id for WHERE clause
+  values.push(id);
+  const whereParamIndex = paramIndex; // this equals values.length (n+1)
+
+  const result = await pool.query(
+    `UPDATE providers SET ${fields.join(', ')} WHERE id = $${whereParamIndex} RETURNING id, name, email, phone, location, team_size, service, website, social_media, notes, facebook, instagram, other_link, professional_headline, image, categories_id, service_id, created_at`,
+    values
+  );
+
+  return result.rows[0];
+}
+
 
   static async deleteById(id) {
     const result = await pool.query("DELETE FROM providers WHERE id = $1 RETURNING id", [id]);
