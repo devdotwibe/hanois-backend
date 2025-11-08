@@ -11,16 +11,16 @@ export const up = (pgm) => {
     id: "id", // Auto-incrementing primary key (serial)
 
     provider_id: {
-      type: "varchar(128)",
+      type: "integer",          // <<-- use integer to match providers.id
       notNull: true,
-      references: "providers(id)", // assumes you already have a providers table
+      references: "providers(id)",
       onDelete: "CASCADE",
     },
 
     service_id: {
-      type: "varchar(128)",
+      type: "integer",          // <<-- use integer to match services.id
       notNull: true,
-      references: "services(id)", // assumes you have a services table
+      references: "services(id)",
       onDelete: "CASCADE",
     },
 
@@ -52,7 +52,7 @@ export const up = (pgm) => {
     },
   });
 
-  // Add helpful indexes for fast lookups
+  // helpful indexes
   pgm.createIndex("provider_services", "provider_id");
   pgm.createIndex("provider_services", "service_id");
 };
