@@ -269,6 +269,60 @@ if (sectionKey === "get_listedmeaningfull") {
 
 
 
+// Case 5️⃣ — Help Card (get_listedhelp)
+if (sectionKey === "get_listedhelp") {
+  const parentSection =
+    (await SectionModel.findByKey(sectionKey)) ||
+    (await SectionModel.create({ key: sectionKey }));
+
+  const body = req.body;
+  const i = 1;
+
+  const helptext = body[`helptext_${i}`] || body[`helptext`] || "";
+  const helpbuttonname = body[`helpbuttonname_${i}`] || body[`helpbuttonname`] || "";
+
+  // If nothing submitted
+  if (!helptext && !helpbuttonname) {
+    return successResponse(res, { card: {} }, "No help card data to save", 200);
+  }
+
+  const cardKey = `${sectionKey}_card_${i}`;
+  let section =
+    (await SectionModel.findByKey(cardKey)) ||
+    (await SectionModel.create({ key: cardKey, parent_key: sectionKey }));
+
+  // 🟩 Help Text Field
+  let textField = await FieldModel.findBySectionAndKey(section.id, "helptext");
+  if (!textField)
+    textField = await FieldModel.create({
+      section_id: section.id,
+      key: "helptext",
+      type: "text",
+    });
+  await FieldTranslationModel.upsert(textField.id, "en", helptext || "");
+
+  // 🟩 Help Button Field
+  let buttonField = await FieldModel.findBySectionAndKey(section.id, "helpbuttonname");
+  if (!buttonField)
+    buttonField = await FieldModel.create({
+      section_id: section.id,
+      key: "helpbuttonname",
+      type: "text",
+    });
+  await FieldTranslationModel.upsert(buttonField.id, "en", helpbuttonname || "");
+
+  const result = { helptext, helpbuttonname };
+
+  return successResponse(res, { card: result }, "Help card saved successfully", 201);
+}
+
+
+
+
+
+
+
+
     throw new ValidationError("Invalid sectionKey");
   } catch (err) {
     // Cleanup temp files on failure
@@ -368,6 +422,29 @@ if (sectionKey === "get_listedmeaningfull") {
 
   return successResponse(res, { card }, "Meaningfull card fetched successfully");
 }
+
+
+
+
+// Case 5️⃣ — Help Card (get_listedhelp)
+if (sectionKey === "get_listedhelp") {
+  const subKey = `${sectionKey}_card_1`;
+  const subSection = await SectionModel.findByKey(subKey);
+  if (!subSection)
+    return successResponse(res, { card: null }, "No help card found");
+
+  const textField = await FieldModel.findBySectionAndKey(subSection.id, "helptext");
+  const buttonField = await FieldModel.findBySectionAndKey(subSection.id, "helpbuttonname");
+
+  const card = {
+    helptext: (await FieldTranslationModel.find(textField.id, "en"))?.value || "",
+    helpbuttonname: (await FieldTranslationModel.find(buttonField.id, "en"))?.value || "",
+  };
+
+  return successResponse(res, { card }, "Help card fetched successfully");
+}
+
+
 
 
 
