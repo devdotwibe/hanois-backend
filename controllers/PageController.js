@@ -199,9 +199,11 @@ if (sectionKey === "get_listedmeaningfull") {
   // Only 1 card required
   const i = 1;
   const meaningfull = body[`meaningfull_${i}`] || body[`meaningfull`] || "";
-  const imageFile = files.find((f) => f.fieldname === `meaningfull_${i}_image` || f.fieldname === `meaningfull_image`);
+  const imageFile = files.find(
+    (f) => f.fieldname === `meaningfull_${i}_image` || f.fieldname === `meaningfull_image`
+  );
 
-  // If nothing submitted, return empty success (or you can throw)
+  // If nothing submitted, return early
   if (!meaningfull && !imageFile) {
     return successResponse(res, { cards: [] }, "No meaningful card data to save", 200);
   }
@@ -211,18 +213,28 @@ if (sectionKey === "get_listedmeaningfull") {
     (await SectionModel.findByKey(cardKey)) ||
     (await SectionModel.create({ key: cardKey, parent_key: sectionKey }));
 
-  // Text field
+  // 🟩 Text Field
   let textField = await FieldModel.findBySectionAndKey(section.id, "meaningfull");
   if (!textField)
-    textField = await FieldModel.create({ section_id: section.id, key: "meaningfull", type: "text" });
+    textField = await FieldModel.create({
+      section_id: section.id,
+      key: "meaningfull",
+      type: "text",
+    });
+
   await FieldTranslationModel.upsert(textField.id, "en", meaningfull || "");
 
-  // Image field
+  // 🟩 Image Field
   let imageField = await FieldModel.findBySectionAndKey(section.id, "meaningfullimage");
   if (!imageField)
-    imageField = await FieldModel.create({ section_id: section.id, key: "meaningfullimage", type: "image" });
+    imageField = await FieldModel.create({
+      section_id: section.id,
+      key: "meaningfullimage",
+      type: "image",
+    });
 
   let imagePath = null;
+
   if (imageFile && imageFile.size > 0) {
     const destDir = path.join(__dirname, "../public/uploads/meaningfull");
     if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
@@ -231,20 +243,28 @@ if (sectionKey === "get_listedmeaningfull") {
     const destPath = path.join(destDir, filename);
     fs.renameSync(imageFile.path, destPath);
 
-    const BASE_URL = process.env.BASE_URL || "https://hanois.dotwibe.com/api";
-    imagePath = `${BASE_URL}/uploads/meaningfull/${filename}`;
+    // ✅ Save only relative path (not full URL)
+    imagePath = `uploads/meaningfull/${filename}`;
   }
 
-  await FieldTranslationModel.upsert(imageField.id, "en", imagePath || "");
+  // ✅ Update only if new image uploaded
+  if (imagePath) {
+    await FieldTranslationModel.upsert(imageField.id, "en", imagePath);
+  }
+
+  // ✅ Retain old image if no new one uploaded
+  const existingImage =
+    imagePath ||
+    (await FieldTranslationModel.find(imageField.id, "en"))?.value ||
+    "";
 
   const result = {
     meaningfull,
-    image: imagePath,
+    image: existingImage,
   };
 
   return successResponse(res, { card: result }, "Meaningfull card saved successfully", 201);
 }
-
 
 
 
