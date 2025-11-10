@@ -9,7 +9,11 @@ const {
   updateProvider,
   getProviderById,
   updateProviderProfile,
-  getAllProviderServices
+  getAllProviderServices,
+  uploadProviderImage,
+  deleteProviderImage,
+  updateProviderHeadline
+
 } = require('../controllers/providerController');
 
 const { providerValidation } = require('../middleware/validation');
