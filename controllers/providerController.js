@@ -401,22 +401,34 @@ exports.updateProviderProfile = [
         return res.status(400).json({ error: 'Provider ID is required in URL' });
       }
 
-      let imageUrl = null;
+      // Build the update object only with fields that were actually provided.
+      const updateData = {};
+
+      // If a file was uploaded, set the image path.
       if (req.file) {
-        imageUrl = `/uploads/${req.file.filename}`;
+        updateData.image = `/uploads/${req.file.filename}`; // <-- fixed backticks
+      } else if (Object.prototype.hasOwnProperty.call(req.body, 'image')) {
+        // If the client explicitly sent "image" (could be `null` to remove)
+        // include it so the client can remove the image via JSON payload.
+        // Note: when using multipart/form-data, req.body.image may be a string.
+        updateData.image = req.body.image === 'null' ? null : req.body.image;
       }
 
-      const updatedProvider = await ProviderModel.updateProfile(providerId, {
-        image: imageUrl,
-        professional_headline
-      });
+      // Always allow updating professional_headline if provided
+      if (typeof professional_headline !== 'undefined') {
+        updateData.professional_headline = professional_headline;
+      }
+
+      // If nothing to update, return current row
+      const updatedProvider = await ProviderModel.updateProfile(providerId, updateData);
 
       return successResponse(res, { provider: updatedProvider }, 'Profile updated successfully');
     } catch (err) {
-      next(err); 
+      next(err);
     }
   }
 ];
+
 
 
 
