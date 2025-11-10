@@ -183,3 +183,55 @@ exports.deleteUser = async (req, res, next) => {
     next(new DatabaseError('Failed to delete user'));
   }
 };
+
+
+
+exports.add_project = async (req, res, next) => {
+  try {
+    const {
+      title,
+      notes,
+      projectType,
+      location,
+      landSize,
+      luxuryLevel,
+      services,
+      constructionBudget,
+      basement,
+      listingStyle
+    } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ error: "Title is required." });
+    }
+
+    if (!projectType) {
+      return res.status(400).json({ error: "Project type is required." });
+    }
+
+    const project = await ProjectsModel.create({
+      title,
+      notes: notes || null,
+      projectType,
+      location: location || null,
+      landSize: landSize || null,
+      luxuryLevel: luxuryLevel || null,
+      services: services || null,
+      constructionBudget: constructionBudget || null,
+      basement: basement || null,
+      listingStyle: listingStyle || null,
+
+      created_at: new Date(),
+    });
+
+    return successResponse(
+      res,
+      { project },
+      "Project created successfully",
+      201
+    );
+
+  } catch (err) {
+    next(err);
+  }
+};
