@@ -3,7 +3,7 @@ const ProjectImageModel = require("../models/projectImageModel");
 const { successResponse } = require("../utils/response");
 const { ValidationError, NotFoundError } = require("../utils/errors");
 
-// 🟩 Create Project (with multiple image uploads)
+// 🟩 Create Project (with multiple image uploads and cover image flag)
 exports.createProject = async (req, res, next) => {
   try {
     const {
@@ -16,11 +16,12 @@ exports.createProject = async (req, res, next) => {
       design_id,
     } = req.body;
 
+    // 🧩 Step 1: Validate
     if (!provider_id || !title) {
       throw new ValidationError("Provider ID and Title are required");
     }
 
-    // ✅ Step 1: Create Project
+    // 🧩 Step 2: Create Project Entry
     const project = await ProjectModel.create({
       provider_id,
       title,
@@ -32,40 +33,57 @@ exports.createProject = async (req, res, next) => {
     });
 
     const project_id = project.id;
+    let savedImages = [];
 
-    // ✅ Step 2: Handle multiple image uploads
+    // 🧩 Step 3: Handle multiple image uploads
     if (req.files && req.files.length > 0) {
-      // Capture is_cover flags from form (frontend sends is_cover_flags[])
+      // Extract cover flags sent from frontend
       const coverFlags =
         req.body["is_cover_flags[]"] || req.body.is_cover_flags || [];
 
-      // Normalize to array
+      // Normalize flags to array form
       const flagsArray = Array.isArray(coverFlags)
         ? coverFlags
         : [coverFlags];
 
-      const savedImages = [];
-
-      for (let i = 0; i < req.files.length; i++) {
-        const file = req.files[i];
-        const isCover = flagsArray[i] === "true"; // map true/false from frontend
-
-        const imageData = {
+      // Prepare image data
+      const imageDataList = req.files.map((file, index) => {
+        const isCover = flagsArray[index] === "true";
+        return {
           project_id,
           provider_id,
           image_path: `/uploads/projects/${file.filename}`,
           is_cover: isCover,
         };
+      });
 
-        const savedImage = await ProjectImageModel.create(imageData);
+      // If more than one image has is_cover = true, keep only the first as true
+      const hasMultipleCovers = imageDataList.filter((img) => img.is_cover).length > 1;
+      if (hasMultipleCovers) {
+        let coverAssigned = false;
+        imageDataList.forEach((img) => {
+          if (img.is_cover && !coverAssigned) {
+            coverAssigned = true;
+          } else {
+            img.is_cover = false;
+          }
+        });
+      }
+
+      // Save images in DB
+      for (const img of imageDataList) {
+        const savedImage = await ProjectImageModel.create(img);
         savedImages.push(savedImage);
       }
 
+      // Attach images to project object
       project.images = savedImages;
     }
 
+    // 🧩 Step 4: Send success response
     successResponse(res, { project }, "Project created successfully", 201);
   } catch (err) {
+    console.error("❌ Error in createProject:", err);
     next(err);
   }
 };
