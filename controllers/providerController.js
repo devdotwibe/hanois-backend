@@ -36,7 +36,7 @@ exports.resetPassword = async (req, res, next) => {
 
 exports.registerProvider = async (req, res, next) => {
   try {
-    const { name, email, phone, register_no, password, location, team_size, service, website, social_media } = req.body;
+    const { name, email, phone, register_no, password, location, team_size, service, website, social_media,service_notes } = req.body;
 
 
     const emailCheck = await validateEmail(email);
@@ -64,7 +64,8 @@ exports.registerProvider = async (req, res, next) => {
       team_size,
       service,
       website,
-      social_media
+      social_media,
+      service_notes
     });
 
 
