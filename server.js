@@ -24,6 +24,9 @@ const categoryRoutes = require('./routes/categoryRoutes');
 
 const serviceRoutes = require('./routes/serviceRoutes');
 
+const projectRoutes = require('./routes/projectRoutes');
+const projectImageRoutes = require('./routes/projectImageRoutes');
+
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const pool = require('./db/pool');
 
@@ -47,10 +50,16 @@ const designRoutes = require('./routes/designRoutes');
 
 
 
+const projectUploadDir = path.join(__dirname, 'public/uploads/projects');
+if (!fs.existsSync(projectUploadDir)) {
+  fs.mkdirSync(projectUploadDir, { recursive: true });
+  console.log('✅ Created /public/uploads/projects directory automatically');
+}
 
 
 
 app.use('/banner', express.static(bannerDir));
+app.use('/uploads/projects', express.static(projectUploadDir));
 
 app.use(
   cors({
@@ -84,7 +93,8 @@ app.use("/api/services", serviceRoutes);
 app.use("/api/design", designRoutes);
 
 
-
+app.use('/api/projects', projectRoutes);
+app.use('/api/project-images', projectImageRoutes);
 
 
 
