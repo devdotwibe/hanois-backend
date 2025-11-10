@@ -76,6 +76,8 @@ app.use("/api/categories", categoryRoutes);
 
 app.use("/api/services", serviceRoutes);
 
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+
 
 app.get('/', (req, res) => {
   res.json({
