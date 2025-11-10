@@ -12,26 +12,28 @@ class FaqModel {
         f.language,
         f.post_name,
         f.post_id,
+          f.order,
         p.name AS post_display_name
       FROM faqcontent f
       LEFT JOIN post p ON f.post_id = p.id
-      ORDER BY f.id DESC
+      ORDER BY f.order ASC, f.id ASC
     `);
     return result.rows;
   }
 
   // 🟩 Create new FAQ
-  static async create(data) {
-    const { title, question, answer, language = "en", post_name, post_id } = data;
+static async create(data) {
+  const { title, question, answer, language = "en", post_name, post_id, order = 0 } = data;
 
-    const result = await pool.query(
-      `INSERT INTO faqcontent (title, question, answer, language, post_name, post_id)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, title, question, answer, language, post_name, post_id`,
-      [title, question, answer, language, post_name, post_id]
-    );
-    return result.rows[0];
-  }
+  const result = await pool.query(
+    `INSERT INTO faqcontent (title, question, answer, language, post_name, post_id, order)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING id, title, question, answer, language, post_name, post_id, order`,
+    [title, question, answer, language, post_name, post_id, order]
+  );
+  return result.rows[0];
+}
+
 
   // 🟩 Find FAQ by ID
   static async findById(id) {
@@ -62,7 +64,8 @@ class FaqModel {
     const values = [];
     let paramIndex = 1;
 
-    const updatableFields = ["title", "question", "answer", "language", "post_name", "post_id"];
+    const updatableFields = ["title", "question", "answer", "language", "post_name", "post_id", "order"];
+
 
     for (const key of updatableFields) {
       if (data[key] !== undefined) {

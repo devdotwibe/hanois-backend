@@ -6,14 +6,22 @@ const { ValidationError, NotFoundError } = require("../utils/errors");
 // 🟩 Create FAQ (multiple entries allowed)
 exports.createFaq = async (req, res, next) => {
   try {
-    const { engtitle, engquestion, enganswer, arabtitle, arabquestion, arabanswer } = req.body;
+    const {
+      engtitle,
+      engquestion,
+      enganswer,
+      arabtitle,
+      arabquestion,
+      arabanswer,
+      order, // ✅ added order field
+    } = req.body;
 
-    // Validate required fields
-    // if (!engtitle || !engquestion || !enganswer || !arabtitle || !arabquestion || !arabanswer) {
-    //   throw new ValidationError("All English and Arabic FAQ fields are required");
+    // Optional: Validate required fields
+    // if (!engtitle || !engquestion || !enganswer) {
+    //   throw new ValidationError("English title, question, and answer are required");
     // }
 
-    // Find or create the 'faq_content' post
+    // 🟩 Find or create the 'faq_content' post
     let post = await PostModel.findByName("faq_content");
     if (!post) {
       post = await PostModel.create({ name: "faq_content" });
@@ -27,6 +35,7 @@ exports.createFaq = async (req, res, next) => {
       language: "en",
       post_name: post.name,
       post_id: post.id,
+      order: order || 0, // ✅ include order
     });
 
     // 🟩 Always create a NEW Arabic FAQ
@@ -37,6 +46,7 @@ exports.createFaq = async (req, res, next) => {
       language: "ar",
       post_name: post.name,
       post_id: post.id,
+      order: order || 0, // ✅ include order
     });
 
     successResponse(res, { faq_en, faq_ar }, "FAQ created successfully", 201);
@@ -45,10 +55,10 @@ exports.createFaq = async (req, res, next) => {
   }
 };
 
-// 🟩 Get all FAQs
+// 🟩 Get all FAQs (sorted by order ASC)
 exports.getFaqs = async (req, res, next) => {
   try {
-    const faqs = await FaqModel.getAll();
+    const faqs = await FaqModel.getAll(); // already sorted by order ASC in model
     successResponse(res, { faqs, count: faqs.length }, "FAQs retrieved successfully");
   } catch (err) {
     next(err);
@@ -71,7 +81,15 @@ exports.getFaqById = async (req, res, next) => {
 exports.updateFaq = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const faq = await FaqModel.updateById(id, req.body);
+
+    // Include order field if present in body
+    const updatedData = {
+      ...req.body,
+      ...(req.body.order ? { order: parseInt(req.body.order) } : {}),
+    };
+
+    const faq = await FaqModel.updateById(id, updatedData);
+
     if (!faq) throw new NotFoundError("FAQ not found or not updated");
     successResponse(res, { faq }, "FAQ updated successfully");
   } catch (err) {
