@@ -274,6 +274,7 @@ exports.updateProvider = async (req, res, next) => {
       social_media,
       categories_id,
       service_id,
+      service_notes,
       notes,
       facebook,
       instagram,
@@ -303,29 +304,27 @@ exports.updateProvider = async (req, res, next) => {
         const average_cost = rawCost !== undefined && rawCost !== null && rawCost !== "" ? Number(rawCost) : null;
 
         const currency = (item.currency || item.curr || "KD")?.toString() ?? "KD";
-        const service_note = (item.note ?? item.service_note ?? null);
 
         // try UPDATE first
-        const updateRes = await client.query(
-          `UPDATE provider_services
-           SET average_cost = $1,
-               currency = $2,
-               service_note = $3,
-               updated_at = NOW()
-           WHERE provider_id = $4 AND service_id = $5
-           RETURNING id`,
-          [average_cost, currency, service_note, providerId, serviceId]
-        );
+      const updateRes = await client.query(
+        `UPDATE provider_services
+        SET average_cost = $1,
+            currency = $2,
+            updated_at = NOW()
+        WHERE provider_id = $3 AND service_id = $4
+        RETURNING id`,
+        [average_cost, currency, providerId, serviceId]
+      );
 
-        if (updateRes.rowCount === 0) {
-          // not existed -> INSERT
-          await client.query(
-            `INSERT INTO provider_services
-             (provider_id, service_id, average_cost, currency, service_note, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, NOW(), NOW())`,
-            [providerId, serviceId, average_cost, currency, service_note]
-          );
-        }
+      if (updateRes.rowCount === 0) {
+        // INSERT without service_note
+        await client.query(
+          `INSERT INTO provider_services
+          (provider_id, service_id, average_cost, currency, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+          [providerId, serviceId, average_cost, currency]
+        );
+      }
       }
     }
 
