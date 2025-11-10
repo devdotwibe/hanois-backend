@@ -20,7 +20,7 @@ exports.createProject = async (req, res, next) => {
       throw new ValidationError("Provider ID and Title are required");
     }
 
-    // ✅ Step 1: Create project
+    // ✅ Step 1: Create Project
     const project = await ProjectModel.create({
       provider_id,
       title,
@@ -31,17 +31,37 @@ exports.createProject = async (req, res, next) => {
       design_id,
     });
 
-    // ✅ Step 2: Handle image uploads (if any)
-    if (req.files && req.files.length > 0) {
-      const images = req.files.map((file) => ({
-        image_path: `/uploads/projects/${file.filename}`,
-        project_id: project.id,
-        provider_id: provider_id,
-      }));
+    const project_id = project.id;
 
-      for (const img of images) {
-        await ProjectImageModel.create(img);
+    // ✅ Step 2: Handle multiple image uploads
+    if (req.files && req.files.length > 0) {
+      // Capture is_cover flags from form (frontend sends is_cover_flags[])
+      const coverFlags =
+        req.body["is_cover_flags[]"] || req.body.is_cover_flags || [];
+
+      // Normalize to array
+      const flagsArray = Array.isArray(coverFlags)
+        ? coverFlags
+        : [coverFlags];
+
+      const savedImages = [];
+
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+        const isCover = flagsArray[i] === "true"; // map true/false from frontend
+
+        const imageData = {
+          project_id,
+          provider_id,
+          image_path: `/uploads/projects/${file.filename}`,
+          is_cover: isCover,
+        };
+
+        const savedImage = await ProjectImageModel.create(imageData);
+        savedImages.push(savedImage);
       }
+
+      project.images = savedImages;
     }
 
     successResponse(res, { project }, "Project created successfully", 201);
@@ -49,7 +69,6 @@ exports.createProject = async (req, res, next) => {
     next(err);
   }
 };
-
 // 🟩 Get all projects
 exports.getProjects = async (req, res, next) => {
   try {
