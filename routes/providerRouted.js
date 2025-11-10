@@ -28,4 +28,23 @@ router.put('/:id', authenticateToken, updateProvider);
 
 router.get('/:id', authenticateToken, getProviderById);
 
+
+router.put(
+  '/update-profile/:providerId/image',
+  authenticateToken,
+  upload.single('image'),
+  uploadProviderImage
+);
+
+router.delete(
+  '/update-profile/:providerId/image',
+  authenticateToken,
+  deleteProviderImage
+);
+
+router.put(
+  '/update-profile/:providerId/headline',
+  authenticateToken,
+  updateProviderHeadline
+);
 module.exports = router;

@@ -390,33 +390,79 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-exports.updateProviderProfile = [
+// ---- image / headline handlers (controllers/providerController.js) ----
+
+/**
+ * PUT /providers/update-profile/:providerId/image
+ * - multipart/form-data with field 'image'
+ */
+exports.uploadProviderImage = [
   upload.single('image'),
   async (req, res, next) => {
     try {
       const providerId = req.params.providerId;
-      const { professional_headline } = req.body;
+      if (!providerId) return res.status(400).json({ error: 'Provider ID is required in URL' });
 
-      if (!providerId) {
-        return res.status(400).json({ error: 'Provider ID is required in URL' });
+      if (!req.file) {
+        return res.status(400).json({ error: 'No image file uploaded' });
       }
 
-      let imageUrl = null;
-      if (req.file) {
-        imageUrl = `/uploads/${req.file.filename}`;
-      }
+      // store path (same convention you used earlier)
+      const imageUrl = `/uploads/${req.file.filename}`;
 
       const updatedProvider = await ProviderModel.updateProfile(providerId, {
-        image: imageUrl,
-        professional_headline
+        image: imageUrl
       });
 
-      return successResponse(res, { provider: updatedProvider }, 'Profile updated successfully');
+      return successResponse(res, { provider: updatedProvider }, 'Image uploaded successfully');
     } catch (err) {
-      next(err); 
+      next(err);
     }
   }
 ];
+
+/**
+ * DELETE /providers/update-profile/:providerId/image
+ * - removes image by setting it to null
+ */
+exports.deleteProviderImage = async (req, res, next) => {
+  try {
+    const providerId = req.params.providerId;
+    if (!providerId) return res.status(400).json({ error: 'Provider ID is required in URL' });
+
+    const updatedProvider = await ProviderModel.updateProfile(providerId, {
+      image: null
+    });
+
+    return successResponse(res, { provider: updatedProvider }, 'Image removed successfully');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * PUT /providers/update-profile/:providerId/headline
+ * - application/json: { professional_headline: "..." }
+ */
+exports.updateProviderHeadline = async (req, res, next) => {
+  try {
+    const providerId = req.params.providerId;
+    if (!providerId) return errorResponse(res, "Provider ID is required", 400);
+
+    const { professional_headline } = req.body;
+    if (typeof professional_headline === 'undefined') {
+      return errorResponse(res, "professional_headline is required", 400);
+    }
+
+    const updatedProvider = await ProviderModel.updateProfile(providerId, {
+      professional_headline
+    });
+
+    return successResponse(res, { provider: updatedProvider }, 'Headline updated successfully');
+  } catch (err) {
+    next(err);
+  }
+};
 
 
 
