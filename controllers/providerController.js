@@ -256,7 +256,8 @@ exports.updateProvider = async (req, res, next) => {
       notes,
       facebook,
       instagram,
-      other_link
+      other_link,
+      service_notes
     } = req.body;
 
     // Start transaction
