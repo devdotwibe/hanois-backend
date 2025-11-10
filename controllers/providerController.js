@@ -373,50 +373,53 @@ exports.updateProvider = async (req, res, next) => {
 
 
 
-
 const multer = require('multer');
 const path = require('path');
+const ProviderModel = require('../models/ProviderModel');
+const { successResponse } = require('../utils/response');
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'public/uploads/'); 
-  },
+  destination: (req, file, cb) => cb(null, 'public/uploads/'),
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname); 
-    const fileName = Date.now() + ext; 
-    cb(null, fileName); 
-  }
+    const ext = path.extname(file.originalname);
+    const fileName = Date.now() + ext;
+    cb(null, fileName);
+  },
 });
+const upload = multer({ storage });
 
-const upload = multer({ storage: storage });
-
-exports.updateProviderProfile = [
-  upload.single('image'),
-  async (req, res, next) => {
-    try {
-      const providerId = req.params.providerId;
-      const { professional_headline } = req.body;
-
-      if (!providerId) {
-        return res.status(400).json({ error: 'Provider ID is required in URL' });
-      }
-
-      let imageUrl = null;
-      if (req.file) {
-        imageUrl = `/uploads/${req.file.filename}`;
-      }
-
-      const updatedProvider = await ProviderModel.updateProfile(providerId, {
-        image: imageUrl,
-        professional_headline
-      });
-
-      return successResponse(res, { provider: updatedProvider }, 'Profile updated successfully');
-    } catch (err) {
-      next(err); 
+exports.updateProviderProfile = async (req, res, next) => {
+  try {
+    const providerId = req.params.providerId;
+    if (!providerId) {
+      return res.status(400).json({ error: 'Provider ID is required in URL' });
     }
+
+    let professional_headline = null;
+    let image = undefined;
+
+    // If multipart form-data (Multer will parse it)
+    if (req.file) {
+      image = `/uploads/${req.file.filename}`;
+      professional_headline = req.body.professional_headline;
+    } else if (req.is('application/json')) {
+      // Handle JSON request (like delete image)
+      ({ image, professional_headline } = req.body);
+    }
+
+    const updatedProvider = await ProviderModel.updateProfile(providerId, {
+      image,
+      professional_headline,
+    });
+
+    return successResponse(res, { provider: updatedProvider }, 'Profile updated successfully');
+  } catch (err) {
+    next(err);
   }
-];
+};
+
+// Export multer middleware separately
+exports.uploadMiddleware = upload.single('image');
 
 
 
