@@ -3,7 +3,7 @@ const ProjectImageModel = require("../models/projectImageModel");
 const { successResponse } = require("../utils/response");
 const { ValidationError, NotFoundError } = require("../utils/errors");
 
-// 🟩 Create Project
+// 🟩 Create Project (with multiple image uploads)
 exports.createProject = async (req, res, next) => {
   try {
     const {
@@ -20,6 +20,7 @@ exports.createProject = async (req, res, next) => {
       throw new ValidationError("Provider ID and Title are required");
     }
 
+    // ✅ Step 1: Create project
     const project = await ProjectModel.create({
       provider_id,
       title,
@@ -29,6 +30,19 @@ exports.createProject = async (req, res, next) => {
       project_type_id,
       design_id,
     });
+
+    // ✅ Step 2: Handle image uploads (if any)
+    if (req.files && req.files.length > 0) {
+      const images = req.files.map((file) => ({
+        image_path: `/uploads/projects/${file.filename}`,
+        project_id: project.id,
+        provider_id: provider_id,
+      }));
+
+      for (const img of images) {
+        await ProjectImageModel.create(img);
+      }
+    }
 
     successResponse(res, { project }, "Project created successfully", 201);
   } catch (err) {
@@ -103,7 +117,8 @@ exports.deleteProject = async (req, res, next) => {
     const { id } = req.params;
     const deleted = await ProjectModel.deleteById(id);
 
-    if (!deleted) throw new NotFoundError("Project not found or already deleted");
+    if (!deleted)
+      throw new NotFoundError("Project not found or already deleted");
 
     successResponse(res, { id: deleted.id }, "Project deleted successfully");
   } catch (err) {
