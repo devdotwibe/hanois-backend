@@ -12,11 +12,11 @@ class FaqModel {
         f.language,
         f.post_name,
         f.post_id,
-          f.order,
+        f."order",
         p.name AS post_display_name
       FROM faqcontent f
       LEFT JOIN post p ON f.post_id = p.id
-      ORDER BY f.order ASC, f.id ASC
+  ORDER BY f."order" ASC, f.id ASC
     `);
     return result.rows;
   }
@@ -25,12 +25,14 @@ class FaqModel {
 static async create(data) {
   const { title, question, answer, language = "en", post_name, post_id, order = 0 } = data;
 
-  const result = await pool.query(
-    `INSERT INTO faqcontent (title, question, answer, language, post_name, post_id, order)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
-     RETURNING id, title, question, answer, language, post_name, post_id, order`,
-    [title, question, answer, language, post_name, post_id, order]
-  );
+const result = await pool.query(
+  `INSERT INTO faqcontent (title, question, answer, language, post_name, post_id, "order")
+   VALUES ($1, $2, $3, $4, $5, $6, $7)
+   RETURNING id, title, question, answer, language, post_name, post_id, "order"`,
+  [title, question, answer, language, post_name, post_id, order]
+);
+
+
   return result.rows[0];
 }
 
@@ -69,7 +71,9 @@ static async create(data) {
 
     for (const key of updatableFields) {
       if (data[key] !== undefined) {
-        fields.push(`${key} = $${paramIndex++}`);
+      const columnName = key === "order" ? `"order"` : key;
+fields.push(`${columnName} = $${paramIndex++}`);
+
         values.push(data[key]);
       }
     }
