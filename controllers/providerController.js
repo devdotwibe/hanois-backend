@@ -390,31 +390,46 @@ exports.updateProviderProfile = async (req, res, next) => {
   try {
     const providerId = req.params.providerId;
     if (!providerId) {
-      return res.status(400).json({ error: 'Provider ID is required in URL' });
+      return errorResponse(res, "Provider ID is required", 400);
     }
 
-    let professional_headline = null;
     let image = undefined;
+    let professional_headline = undefined;
 
-    // If multipart form-data (Multer will parse it)
+    // Case 1: file upload (multipart/form-data)
     if (req.file) {
       image = `/uploads/${req.file.filename}`;
-      professional_headline = req.body.professional_headline;
-    } else if (req.is('application/json')) {
-      // Handle JSON request (like delete image)
-      ({ image, professional_headline } = req.body);
+      professional_headline = req.body.professional_headline ?? null;
+    }
+    // Case 2: JSON body (like deleting image or editing headline)
+    else if (req.is("application/json")) {
+      image = req.body.image;
+      professional_headline = req.body.professional_headline ?? null;
     }
 
+    // Ensure we have something to update
+    if (image === undefined && professional_headline === undefined) {
+      return errorResponse(res, "No fields provided to update", 400);
+    }
+
+    // Save to database
     const updatedProvider = await ProviderModel.updateProfile(providerId, {
       image,
       professional_headline,
     });
 
-    return successResponse(res, { provider: updatedProvider }, 'Profile updated successfully');
+    if (!updatedProvider) {
+      return errorResponse(res, "Provider not found", 404);
+    }
+
+    // ✅ Return latest provider data immediately
+    return successResponse(res, { provider: updatedProvider }, "Profile updated successfully");
   } catch (err) {
+    console.error("Error updating provider profile:", err);
     next(err);
   }
 };
+
 
 // Export multer middleware separately
 exports.uploadMiddleware = upload.single('image');
