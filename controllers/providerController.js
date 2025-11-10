@@ -373,51 +373,62 @@ exports.updateProvider = async (req, res, next) => {
 
 
 
+
 const multer = require('multer');
 const path = require('path');
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'public/uploads/'),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const fileName = Date.now() + ext;
-    cb(null, fileName);
+  destination: (req, file, cb) => {
+    cb(null, 'public/uploads/'); 
   },
-});
-const upload = multer({ storage });
-
-exports.updateProviderProfile = async (req, res, next) => {
-  try {
-    const providerId = req.params.providerId;
-    if (!providerId) {
-      return res.status(400).json({ error: 'Provider ID is required in URL' });
-    }
-
-    let professional_headline = null;
-    let image = undefined;
-
-    // If multipart form-data (Multer will parse it)
-    if (req.file) {
-      image = `/uploads/${req.file.filename}`;
-      professional_headline = req.body.professional_headline;
-    } else if (req.is('application/json')) {
-      // Handle JSON request (like delete image)
-      ({ image, professional_headline } = req.body);
-    }
-
-    const updatedProvider = await ProviderModel.updateProfile(providerId, {
-      image,
-      professional_headline,
-    });
-
-    return successResponse(res, { provider: updatedProvider }, 'Profile updated successfully');
-  } catch (err) {
-    next(err);
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname); 
+    const fileName = Date.now() + ext; 
+    cb(null, fileName); 
   }
-};
+});
 
-// Export multer middleware separately
-exports.uploadMiddleware = upload.single('image');
+const upload = multer({ storage: storage });
+
+exports.updateProviderProfile = [
+  upload.single('image'),
+  async (req, res, next) => {
+    try {
+      const providerId = req.params.providerId;
+      const { professional_headline } = req.body;
+
+      if (!providerId) {
+        return res.status(400).json({ error: 'Provider ID is required in URL' });
+      }
+
+      // Build the update object only with fields that were actually provided.
+      const updateData = {};
+
+      // If a file was uploaded, set the image path.
+      if (req.file) {
+        updateData.image = `/uploads/${req.file.filename}`; // <-- fixed backticks
+      } else if (Object.prototype.hasOwnProperty.call(req.body, 'image')) {
+        // If the client explicitly sent "image" (could be `null` to remove)
+        // include it so the client can remove the image via JSON payload.
+        // Note: when using multipart/form-data, req.body.image may be a string.
+        updateData.image = req.body.image === 'null' ? null : req.body.image;
+      }
+
+      // Always allow updating professional_headline if provided
+      if (typeof professional_headline !== 'undefined') {
+        updateData.professional_headline = professional_headline;
+      }
+
+      // If nothing to update, return current row
+      const updatedProvider = await ProviderModel.updateProfile(providerId, updateData);
+
+      return successResponse(res, { provider: updatedProvider }, 'Profile updated successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+];
+
 
 
 
