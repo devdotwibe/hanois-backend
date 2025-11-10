@@ -51,7 +51,7 @@ if (sectionKey === "get_listedhandis") {
   const body = req.body;
   const cards = [];
 
-  for (let i = 1; i <= 3; i++) {
+  for (let i = 1; i <= 4; i++) {
     const handistitle = body[`handis_${i}_title`];
     const handisbuttonname = body[`handis_${i}_buttonname`];
     const imageFile = files.find((f) => f.fieldname === `handis_${i}_image`);
@@ -137,7 +137,7 @@ if (sectionKey === "get_listedhandis") {
       const body = req.body;
       const cards = [];
 
-      for (let i = 1; i <= 3; i++) {
+      for (let i = 1; i <= 4; i++) {
         const handistitle = body[`handis_${i}_title`];
         const handisbuttonname = body[`handis_${i}_buttonname`];
         const imageFile = files.find((f) => f.fieldname === `handis_${i}_image`);
@@ -469,7 +469,7 @@ exports.getListed = async (req, res, next) => {
 
         if (sectionKey === "get_listedhandis") {
       const cards = [];
-      for (let i = 1; i <= 3; i++) {
+      for (let i = 1; i <= 4; i++) {
         const subKey = `${sectionKey}_card_${i}`;
         const subSection = await SectionModel.findByKey(subKey);
         if (!subSection) continue;
