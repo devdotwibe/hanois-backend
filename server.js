@@ -42,6 +42,12 @@ if (!fs.existsSync(bannerDir)) {
 }
 
 
+const designRoutes = require('./routes/designRoutes');
+
+
+
+
+
 
 
 app.use('/banner', express.static(bannerDir));
@@ -75,6 +81,11 @@ app.use("/api/page", pageRoutes);
 app.use("/api/categories", categoryRoutes);
 
 app.use("/api/services", serviceRoutes);
+app.use("/api/design", designRoutes);
+
+
+
+
 
 
 app.get('/', (req, res) => {
