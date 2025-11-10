@@ -61,36 +61,94 @@ const result = await pool.query(
   }
 
   // 🟩 Update FAQ by ID
-  static async updateById(id, data) {
+// 🟩 Update FAQ by ID with Order Swap Logic
+static async updateById(id, data) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // 1️⃣ Get current FAQ
+    const currentRes = await client.query(
+      `SELECT id, "order" FROM faqcontent WHERE id = $1`,
+      [id]
+    );
+    const currentFaq = currentRes.rows[0];
+    if (!currentFaq) return null;
+
+    const oldOrder = currentFaq.order;
+    const newOrder = parseInt(data.order);
+
+    // 2️⃣ If order is being changed
+    if (!isNaN(newOrder) && newOrder !== oldOrder) {
+      if (newOrder < oldOrder) {
+        // Move all items between newOrder and oldOrder - 1 down by 1
+        await client.query(
+          `UPDATE faqcontent
+           SET "order" = "order" + 1
+           WHERE "order" >= $1 AND "order" < $2 AND id <> $3`,
+          [newOrder, oldOrder, id]
+        );
+      } else if (newOrder > oldOrder) {
+        // Move all items between oldOrder + 1 and newOrder up by 1
+        await client.query(
+          `UPDATE faqcontent
+           SET "order" = "order" - 1
+           WHERE "order" <= $1 AND "order" > $2 AND id <> $3`,
+          [newOrder, oldOrder, id]
+        );
+      }
+    }
+
+    // 3️⃣ Build dynamic fields for the main update
     const fields = [];
     const values = [];
     let paramIndex = 1;
 
-    const updatableFields = ["title", "question", "answer", "language", "post_name", "post_id", "order"];
-
+    const updatableFields = [
+      "title",
+      "question",
+      "answer",
+      "language",
+      "post_name",
+      "post_id",
+      "order",
+    ];
 
     for (const key of updatableFields) {
       if (data[key] !== undefined) {
-      const columnName = key === "order" ? `"order"` : key;
-fields.push(`${columnName} = $${paramIndex++}`);
-
+        const columnName = key === "order" ? `"order"` : key;
+        fields.push(`${columnName} = $${paramIndex++}`);
         values.push(data[key]);
       }
     }
 
-    if (fields.length === 0) return null;
+    if (fields.length === 0) {
+      await client.query("ROLLBACK");
+      return null;
+    }
+
     values.push(id);
 
-    const result = await pool.query(
-      `UPDATE faqcontent 
-       SET ${fields.join(", ")} 
+    // 4️⃣ Update target FAQ
+    const updateRes = await client.query(
+      `UPDATE faqcontent
+       SET ${fields.join(", ")}
        WHERE id = $${paramIndex}
-       RETURNING id, title, question, answer, language, post_name, post_id`,
+       RETURNING id, title, question, answer, language, post_name, post_id, "order"`,
       values
     );
 
-    return result.rows[0];
+    await client.query("COMMIT");
+    return updateRes.rows[0];
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("❌ Order swap failed:", err);
+    throw err;
+  } finally {
+    client.release();
   }
+}
+
 
   // 🟩 Delete FAQ by ID
   static async deleteById(id) {
