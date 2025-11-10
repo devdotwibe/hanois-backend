@@ -446,7 +446,6 @@ exports.getAllProviderServices = async (req, res, next) => {
         s.name AS service_name,
         ps.average_cost,
         ps.currency,
-        ps.service_note,
         ps.created_at,
         ps.updated_at
       FROM provider_services ps
