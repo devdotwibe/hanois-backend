@@ -25,7 +25,7 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({
-  storage: storage,
+  storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max per image
 });
 
@@ -42,8 +42,11 @@ router.get("/", getProjects);
 // 🟩 Get a single project by ID
 router.get("/:id", getProjectById);
 
-// 🟩 Update a project by ID (also supports new image uploads)
+// 🟩 Update a project by ID (supports image uploads)
 router.put("/:id", upload.array("images", 10), updateProject);
+
+// 🟩 ✅ ALSO ALLOW POST FOR UPDATES (for FormData requests)
+router.post("/:id", upload.array("images", 10), updateProject);
 
 // 🟩 Delete a project
 router.delete("/:id", deleteProject);
