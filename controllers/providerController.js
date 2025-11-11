@@ -178,55 +178,33 @@ exports.loginProvider = async (req, res, next) => {
 
 exports.getProviders = async (req, res, next) => {
   try {
-    const { category, name, service, design_name } = req.query;  // Extract category, name, service, and design_name filters from query params
+    const { category, name, service } = req.query;  // Extract category, name, and service filters from query params
     
-    let providersQuery = `
-      SELECT DISTINCT providers.*
-      FROM providers
-      LEFT JOIN projects p ON p.provider_id = providers.id
-      LEFT JOIN design d ON p.design_id = d.id
-    `;
+    let providers;
     
-    let queryParams = [];
-    let conditions = [];
-    
-    // Filter by category
+    // If category is provided, filter providers by category
     if (category) {
-      providersQuery += " LEFT JOIN categories c ON c.id = ANY(providers.categories_id)";
-      conditions.push(`c.name = $${queryParams.length + 1}`);
-      queryParams.push(category);
+      providers = await ProviderModel.getByCategory(category);
+    } else {
+      // Otherwise, fetch all providers
+      providers = await ProviderModel.getAll();
     }
 
-    // Filter by provider name
+    // If name filter is provided, filter providers by name
     if (name) {
-      conditions.push(`providers.name ILIKE $${queryParams.length + 1}`);
-      queryParams.push(`%${name}%`);
+      providers = providers.filter(provider =>
+        provider.name.toLowerCase().includes(name.toLowerCase())
+      );
     }
 
-    // Filter by service
+    // If service filter is provided, filter providers by service
     if (service) {
-      conditions.push(`providers.service ILIKE $${queryParams.length + 1}`);
-      queryParams.push(`%${service}%`);
+      providers = providers.filter(provider =>
+        provider.service.toLowerCase().includes(service.toLowerCase())
+      );
     }
 
-    // Filter by design_name (style)
-    if (design_name) {
-      conditions.push(`d.name ILIKE $${queryParams.length + 1}`);
-      queryParams.push(`%${design_name}%`);
-    }
-
-    // Combine all conditions into the query
-    if (conditions.length > 0) {
-      providersQuery += " WHERE " + conditions.join(" AND ");
-    }
-
-    providersQuery += " ORDER BY providers.name"; // Optional: Order by provider name (or another criteria)
-
-    // Execute query
-    const result = await pool.query(providersQuery, queryParams);
-    const providers = result.rows;
-
-    // Return the filtered providers
+    // Return the filtered results
     successResponse(res, { providers, count: providers.length }, 'Providers retrieved successfully');
   } catch (err) {
     next(err);
