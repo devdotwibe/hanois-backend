@@ -89,19 +89,32 @@ exports.createProject = async (req, res, next) => {
   }
 };
 
-// 🟩 Get all projects
+// 🟩 Get all projects (optionally filter by provider_id)
 exports.getProjects = async (req, res, next) => {
   try {
-    const projects = await ProjectModel.getAll();
+    const { provider_id } = req.query; // ✅ read from query param
+
+    let projects;
+
+    if (provider_id) {
+      // ✅ Fetch only projects for that provider
+      projects = await ProjectModel.getByProviderId(provider_id);
+    } else {
+      // ✅ Fetch all projects (fallback)
+      projects = await ProjectModel.getAll();
+    }
+
     successResponse(
       res,
       { projects, count: projects.length },
       "Projects retrieved successfully"
     );
   } catch (err) {
+    console.error("❌ Error in getProjects:", err);
     next(err);
   }
 };
+
 
 // 🟩 Get project by ID (including images)
 exports.getProjectById = async (req, res, next) => {
