@@ -26,26 +26,26 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // max 10MB per image
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max per image
 });
 
 /* ===========================================================
    🟩 PROJECT CRUD ROUTES
    =========================================================== */
 
-// Create project + upload multiple images
+// 🟩 Create a new project (with images)
 router.post("/", upload.array("images", 10), createProject);
 
-// Get all projects
+// 🟩 Get all projects
 router.get("/", getProjects);
 
-// Get a single project by ID
+// 🟩 Get a single project by ID
 router.get("/:id", getProjectById);
 
-// Update project by ID
-router.put("/:id", updateProject);
+// 🟩 Update a project by ID (also supports new image uploads)
+router.put("/:id", upload.array("images", 10), updateProject);
 
-// Delete project by ID
+// 🟩 Delete a project
 router.delete("/:id", deleteProject);
 
 module.exports = router;

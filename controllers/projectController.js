@@ -120,10 +120,12 @@ exports.getProjectById = async (req, res, next) => {
   }
 };
 
-// 🟩 Update project by ID
+// 🟩 Update project by ID (supports new image uploads)
 exports.updateProject = async (req, res, next) => {
   try {
     const { id } = req.params;
+
+    // 🧩 Step 1: Parse body
     const {
       title,
       notes,
@@ -131,9 +133,15 @@ exports.updateProject = async (req, res, next) => {
       land_size,
       project_type_id,
       design_id,
+      provider_id, // optional but useful
     } = req.body;
 
-    const updated = await ProjectModel.updateById(id, {
+    // 🧩 Step 2: Check project existence
+    const existingProject = await ProjectModel.findById(id);
+    if (!existingProject) throw new NotFoundError("Project not found for update");
+
+    // 🧩 Step 3: Update main project info
+    const updatedProject = await ProjectModel.updateById(id, {
       title,
       notes,
       location,
@@ -142,13 +150,66 @@ exports.updateProject = async (req, res, next) => {
       design_id,
     });
 
-    if (!updated) throw new NotFoundError("Project not found for update");
+    // 🧩 Step 4: Handle newly uploaded images (if any)
+    let savedImages = [];
+    if (req.files && req.files.length > 0) {
+      const coverFlags =
+        req.body["is_cover_flags[]"] || req.body.is_cover_flags || [];
 
-    successResponse(res, { project: updated }, "Project updated successfully");
+      const flagsArray = Array.isArray(coverFlags)
+        ? coverFlags
+        : [coverFlags];
+
+      // Prepare images data
+      const imageDataList = req.files.map((file, index) => {
+        const flagValue = flagsArray[index];
+        const isCover =
+          flagValue === true ||
+          flagValue === "true" ||
+          flagValue === "on" ||
+          flagValue === 1;
+
+        return {
+          project_id: id,
+          provider_id: provider_id || existingProject.provider_id,
+          image_path: `/uploads/projects/${file.filename}`,
+          is_cover: isCover,
+        };
+      });
+
+      // Ensure only one cover image
+      let coverAssigned = false;
+      imageDataList.forEach((img) => {
+        if (img.is_cover && !coverAssigned) {
+          coverAssigned = true;
+        } else if (img.is_cover && coverAssigned) {
+          img.is_cover = false;
+        }
+      });
+
+      // Save images
+      for (const img of imageDataList) {
+        const savedImage = await ProjectImageModel.create(img);
+        savedImages.push(savedImage);
+      }
+    }
+
+    // 🧩 Step 5: Get all images (old + new)
+    const allImages = await ProjectImageModel.getByProject(id);
+    updatedProject.images = allImages;
+
+    // 🧩 Step 6: Send response
+    successResponse(
+      res,
+      { project: updatedProject },
+      "Project updated successfully"
+    );
   } catch (err) {
+    console.error("❌ Error in updateProject:", err);
     next(err);
   }
 };
+
 
 // 🟩 Delete project by ID
 exports.deleteProject = async (req, res, next) => {
