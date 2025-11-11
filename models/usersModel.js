@@ -85,7 +85,7 @@ static async createMyProject(data) {
 
   const result = await pool.query(
     `
-      INSERT INTO projects (
+      INSERT INTO work (
         user_id,
         title,
         notes,
@@ -134,7 +134,6 @@ static async createMyProject(data) {
 }
 
 }
-
 
 
 module.exports = UsersModel;
