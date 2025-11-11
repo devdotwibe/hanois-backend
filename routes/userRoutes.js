@@ -5,7 +5,8 @@ const {
   getUsers, 
   login, 
   deleteUser,
-  add_project 
+  add_project ,
+  getMyProjects,
 } = require('../controllers/userController');
 const { validateRegistration, validateLogin } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
