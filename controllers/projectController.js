@@ -134,6 +134,7 @@ exports.updateProject = async (req, res, next) => {
       project_type_id,
       design_id,
       provider_id, // optional but useful
+      existing_cover_id, // 👈 newly added
     } = req.body;
 
     // 🧩 Step 2: Check project existence
@@ -177,7 +178,7 @@ exports.updateProject = async (req, res, next) => {
         };
       });
 
-      // Ensure only one cover image
+      // Ensure only one cover image among new uploads
       let coverAssigned = false;
       imageDataList.forEach((img) => {
         if (img.is_cover && !coverAssigned) {
@@ -187,18 +188,27 @@ exports.updateProject = async (req, res, next) => {
         }
       });
 
-      // Save images
+      // Save new images to DB
       for (const img of imageDataList) {
         const savedImage = await ProjectImageModel.create(img);
         savedImages.push(savedImage);
       }
     }
 
-    // 🧩 Step 5: Get all images (old + new)
+    // 🧩 Step 5: Handle cover image update for existing images
+    if (existing_cover_id) {
+      // Remove all current covers for this project
+      await ProjectImageModel.removeAllCovers(id);
+
+      // Set selected one as cover
+      await ProjectImageModel.setCoverById(existing_cover_id);
+    }
+
+    // 🧩 Step 6: Get all images (old + new)
     const allImages = await ProjectImageModel.getByProject(id);
     updatedProject.images = allImages;
 
-    // 🧩 Step 6: Send response
+    // 🧩 Step 7: Send success response
     successResponse(
       res,
       { project: updatedProject },
@@ -209,6 +219,7 @@ exports.updateProject = async (req, res, next) => {
     next(err);
   }
 };
+
 
 
 // 🟩 Delete project by ID

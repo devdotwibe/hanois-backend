@@ -70,6 +70,22 @@ class ProjectImageModel {
     );
     return result.rows[0];
   }
+
+  // 🟩 NEW: Remove all cover flags for a given project
+  static async removeAllCovers(project_id) {
+    await pool.query(
+      `UPDATE projectimages SET is_cover = false WHERE project_id = $1`,
+      [project_id]
+    );
+  }
+
+  // 🟩 NEW: Set one image as cover by its ID
+  static async setCoverById(image_id) {
+    await pool.query(
+      `UPDATE projectimages SET is_cover = true WHERE id = $1`,
+      [image_id]
+    );
+  }
 }
 
 module.exports = ProjectImageModel;
