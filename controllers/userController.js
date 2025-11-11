@@ -255,3 +255,17 @@ exports.getMyProjects = async (req, res, next) => {
   }
 };
 
+
+exports.getPublicProjects = async (req, res, next) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM work WHERE listing_style = 'public' ORDER BY id DESC"
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    next(err);
+  }
+};
+
+

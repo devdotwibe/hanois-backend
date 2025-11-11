@@ -7,6 +7,7 @@ const {
   deleteUser,
   add_project ,
   getMyProjects,
+  getPublicProjects,
 } = require('../controllers/userController');
 const { validateRegistration, validateLogin } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
@@ -18,6 +19,8 @@ router.post('/login', validateLogin, login);
 router.post('/add_project', authenticateToken, add_project);
 
 router.get("/my-projects", authenticateToken, getMyProjects);
+
+router.get("/public-project", getPublicProjects);
 
 router.get('/', getUsers);
 
