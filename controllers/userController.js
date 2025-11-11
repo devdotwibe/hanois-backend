@@ -209,17 +209,18 @@ exports.add_project = async (req, res, next) => {
       return res.status(400).json({ error: "Project type is required." });
     }
 
-    const project = await ProjectsModel.create({
+    const project = await UsersModel.createMyProject({
+      user_id: req.user.id,
       title,
       notes: notes || null,
-      projectType,
+      project_type: projectType,
       location: location || null,
-      landSize: landSize || null,
-      luxuryLevel: luxuryLevel || null,
+      land_size: landSize || null,
+      luxury_level: luxuryLevel || null,
       services: services || null,
-      constructionBudget: constructionBudget || null,
+      construction_budget: constructionBudget || null,
       basement: basement || null,
-      listingStyle: listingStyle || null,
+      listing_style: listingStyle || null,
 
       created_at: new Date(),
     });

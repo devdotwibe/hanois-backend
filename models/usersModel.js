@@ -126,7 +126,7 @@ static async createMyProject(data) {
       services || null,
       construction_budget || null,
       basement || null,
-      listing_style || "private",
+      listing_style || null,
     ]
   );
 
