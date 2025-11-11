@@ -237,3 +237,21 @@ exports.add_project = async (req, res, next) => {
     next(err);
   }
 };
+
+
+exports.getMyProjects = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await pool.query(
+      "SELECT * FROM work WHERE user_id = $1 ORDER BY id DESC",
+      [userId]
+    );
+
+    res.json(result.rows);
+
+  } catch (err) {
+    next(err);
+  }
+};
+
