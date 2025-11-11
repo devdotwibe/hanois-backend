@@ -178,12 +178,24 @@ exports.loginProvider = async (req, res, next) => {
 
 exports.getProviders = async (req, res, next) => {
   try {
-    const providers = await ProviderModel.getAll();
+    const { category } = req.query;  // Extract category filter from query params
+    
+    let providers;
+    
+    // If category is provided, filter providers by category
+    if (category) {
+      providers = await ProviderModel.getByCategory(category);
+    } else {
+      // Otherwise, fetch all providers
+      providers = await ProviderModel.getAll();
+    }
+
     successResponse(res, { providers, count: providers.length }, 'Providers retrieved successfully');
   } catch (err) {
     next(err);
   }
 };
+
 
 
 exports.deleteProvider = async (req, res, next) => {
