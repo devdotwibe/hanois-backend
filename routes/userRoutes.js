@@ -16,6 +16,8 @@ router.post('/login', validateLogin, login);
 
 router.post('/add_project', authenticateToken, add_project);
 
+router.get("/my-projects", authenticateToken, getMyProjects);
+
 router.get('/', getUsers);
 
 router.delete('/:id', authenticateToken, deleteUser);
