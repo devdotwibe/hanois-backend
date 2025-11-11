@@ -30,6 +30,10 @@ const projectImageRoutes = require('./routes/projectImageRoutes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const pool = require('./db/pool');
 
+const methodOverride = require('method-override'); 
+
+
+
 const app = express();
 const port = config.port;
 
@@ -37,6 +41,8 @@ app.use(morgan(config.nodeEnv === 'development' ? 'dev' : 'combined'));
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(methodOverride('_method'));
 
 const bannerDir = path.join(__dirname, 'public/banner');
 if (!fs.existsSync(bannerDir)) {
