@@ -205,38 +205,6 @@ static async updateProfile(providerId, data) {
     );
     return result.rows;
   }
-
-
-
-  // Add this static method to your ProviderModel
-static async getByDesign(design) {
-  // if design is a number-like string or number, treat it as id for exact match
-  const maybeId = Number(design);
-  if (!Number.isNaN(maybeId) && String(maybeId) === String(design)) {
-    const result = await pool.query(
-      `SELECT DISTINCT providers.*
-       FROM providers
-       JOIN projects p ON p.provider_id = providers.id
-       WHERE p.design_id = $1`,
-      [maybeId]
-    );
-    return result.rows;
-  }
-
-  // otherwise treat design as a name (case-insensitive match)
-  const result = await pool.query(
-    `SELECT DISTINCT providers.*
-     FROM providers
-     JOIN projects p ON p.provider_id = providers.id
-     JOIN design d ON d.id = p.design_id
-     WHERE d.name ILIKE $1`,
-    [`%${design}%`]
-  );
-  return result.rows;
-}
-
-
-
 }
 
 module.exports = ProviderModel;

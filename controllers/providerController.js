@@ -178,40 +178,33 @@ exports.loginProvider = async (req, res, next) => {
 
 exports.getProviders = async (req, res, next) => {
   try {
-    const { category, name, service, design } = req.query; // added design
+    const { category, name, service } = req.query;  // Extract category, name, and service filters from query params
+    
     let providers;
-
-    // If design is provided, prefer DB query for providers that have projects with that design
-    if (design) {
-      providers = await ProviderModel.getByDesign(design);
-    } else if (category) {
-      // If category is provided, filter providers by category (existing method)
+    
+    // If category is provided, filter providers by category
+    if (category) {
       providers = await ProviderModel.getByCategory(category);
     } else {
       // Otherwise, fetch all providers
       providers = await ProviderModel.getAll();
     }
 
-    // Apply name filter (in-memory)
+    // If name filter is provided, filter providers by name
     if (name) {
       providers = providers.filter(provider =>
-        (provider.name || '')
-          .toString()
-          .toLowerCase()
-          .includes(name.toLowerCase())
+        provider.name.toLowerCase().includes(name.toLowerCase())
       );
     }
 
-    // Apply service filter (in-memory)
+    // If service filter is provided, filter providers by service
     if (service) {
       providers = providers.filter(provider =>
-        (provider.service || '')
-          .toString()
-          .toLowerCase()
-          .includes(service.toLowerCase())
+        provider.service.toLowerCase().includes(service.toLowerCase())
       );
     }
 
+    // Return the filtered results
     successResponse(res, { providers, count: providers.length }, 'Providers retrieved successfully');
   } catch (err) {
     next(err);
