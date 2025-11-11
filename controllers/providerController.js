@@ -178,7 +178,7 @@ exports.loginProvider = async (req, res, next) => {
 
 exports.getProviders = async (req, res, next) => {
   try {
-    const { category } = req.query;  // Extract category filter from query params
+    const { category, name, service } = req.query;  // Extract category, name, and service filters from query params
     
     let providers;
     
@@ -190,6 +190,21 @@ exports.getProviders = async (req, res, next) => {
       providers = await ProviderModel.getAll();
     }
 
+    // If name filter is provided, filter providers by name
+    if (name) {
+      providers = providers.filter(provider =>
+        provider.name.toLowerCase().includes(name.toLowerCase())
+      );
+    }
+
+    // If service filter is provided, filter providers by service
+    if (service) {
+      providers = providers.filter(provider =>
+        provider.service.toLowerCase().includes(service.toLowerCase())
+      );
+    }
+
+    // Return the filtered results
     successResponse(res, { providers, count: providers.length }, 'Providers retrieved successfully');
   } catch (err) {
     next(err);
