@@ -209,7 +209,7 @@ exports.add_project = async (req, res, next) => {
       return res.status(400).json({ error: "Project type is required." });
     }
 
-    const project = await UsersModel.createMyProject({
+    const project = await WorkModel.createMyProject({
       user_id: req.user.id,
       title,
       notes: notes || null,
