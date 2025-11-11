@@ -1,6 +1,6 @@
 const pool = require("../db/pool");
 
-class projectModel {
+class ProjectModel {
   // 🟩 Get all projects with joined category, design names, and images
   static async getAll() {
     const result = await pool.query(`
@@ -8,14 +8,12 @@ class projectModel {
         p.*, 
         c.name AS project_type_name,
         d.name AS design_name,
-        -- Get the cover image (is_cover = true)
         (
           SELECT pi.image_path
           FROM projectimages pi
           WHERE pi.project_id = p.id AND pi.is_cover = true
           LIMIT 1
         ) AS cover_image,
-        -- Get all images as a JSON array
         (
           SELECT json_agg(json_build_object(
             'id', pi.id,
@@ -33,6 +31,41 @@ class projectModel {
     return result.rows;
   }
 
+  // 🟩 NEW: Get all projects by provider_id (filtered)
+  static async getByProviderId(provider_id) {
+    const result = await pool.query(
+      `
+      SELECT 
+        p.*, 
+        c.name AS project_type_name,
+        d.name AS design_name,
+        (
+          SELECT pi.image_path
+          FROM projectimages pi
+          WHERE pi.project_id = p.id AND pi.is_cover = true
+          LIMIT 1
+        ) AS cover_image,
+        (
+          SELECT json_agg(json_build_object(
+            'id', pi.id,
+            'image_path', pi.image_path,
+            'is_cover', pi.is_cover
+          ))
+          FROM projectimages pi
+          WHERE pi.project_id = p.id
+        ) AS images
+      FROM projects p
+      LEFT JOIN categories c ON p.project_type_id = c.id
+      LEFT JOIN design d ON p.design_id = d.id
+      WHERE p.provider_id = $1
+      ORDER BY p.id DESC
+      `,
+      [provider_id]
+    );
+
+    return result.rows;
+  }
+
   // 🟩 Find project by ID (with joins + images)
   static async findById(id) {
     const result = await pool.query(
@@ -41,14 +74,12 @@ class projectModel {
         p.*, 
         c.name AS project_type_name,
         d.name AS design_name,
-        -- Cover image
         (
           SELECT pi.image_path
           FROM projectimages pi
           WHERE pi.project_id = p.id AND pi.is_cover = true
           LIMIT 1
         ) AS cover_image,
-        -- All images
         (
           SELECT json_agg(json_build_object(
             'id', pi.id,
@@ -143,4 +174,4 @@ class projectModel {
   }
 }
 
-module.exports = projectModel;
+module.exports = ProjectModel;
