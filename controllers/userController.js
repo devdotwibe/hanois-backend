@@ -6,6 +6,7 @@ const { successResponse, errorResponse } = require('../utils/response');
 const { ValidationError, AuthenticationError, ConflictError } = require('../utils/errors');
 const { validateEmail } = require('../utils/validateEmail');
 const pool = require("../db/pool");
+const WorkModel = require('../models/workModel');
 
 exports.registerUser = async (req, res, next) => {
   try {
