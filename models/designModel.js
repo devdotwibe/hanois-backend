@@ -46,7 +46,7 @@ class designModel {
 
      const existing = await pool.query(
       `SELECT id FROM design WHERE LOWER(rate) = LOWER($1) LIMIT 1`,
-      [data.build_cost]
+      [data.fee_rate]
     );
 
     if (existing.rows.length > 0) {
