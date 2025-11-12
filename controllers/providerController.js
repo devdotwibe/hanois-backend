@@ -537,3 +537,29 @@ exports.getAllProviderServices = async (req, res, next) => {
     });
   }
 };
+
+exports.getLeads = async (req, res) => {
+  try {
+
+        const userId = req.user?.id;
+
+        if (!userId) {
+          return res.status(400).json({ success: false, error: "User ID not found" });
+        }
+
+        const query = `
+          SELECT *
+          FROM work
+          WHERE $1 = ANY(provider_id)
+          ORDER BY created_at DESC
+        `;
+
+        const { rows } = await pool.query(query, [userId]);
+
+        res.json(rows);
+    } 
+    catch (err) {
+      console.error("Error fetching leads:", err);
+      res.status(500).json({ success: false, error: "Internal server error" });
+    }
+};

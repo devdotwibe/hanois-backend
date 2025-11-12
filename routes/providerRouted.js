@@ -10,7 +10,8 @@ const {
   getProviderById,
   updateProviderProfile,
   getAllProviderServices,
-  getProvidersByCategory
+  getProvidersByCategory,
+  getLeads
 } = require('../controllers/providerController');
 
 const { providerValidation } = require('../middleware/validation');
@@ -30,5 +31,7 @@ router.put('/:id', authenticateToken, updateProvider);
 router.get('/:id', authenticateToken, getProviderById);
 
 router.get("/by-category/:categoryId", getProvidersByCategory);
+
+router.get("/get_leads", getLeads);
 
 module.exports = router;
