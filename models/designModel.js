@@ -1,55 +1,73 @@
 const pool = require("../db/pool");
 
 class designModel {
-  // 🟩 Get all designs
+
   static async getAll() {
     const result = await pool.query("SELECT * FROM design ORDER BY id ASC");
     return result.rows;
   }
 
-  // 🟩 Find a design by ID
   static async findById(id) {
     const result = await pool.query("SELECT * FROM design WHERE id = $1", [id]);
     return result.rows[0];
   }
 
-  // 🟩 Create a new design
   static async create(data) {
-    const { name } = data;
+
+    const { name,build_cost,fee_rate,quality } = data;
 
     const result = await pool.query(
-      `INSERT INTO design (name, created_at)
-       VALUES ($1, NOW())
-       RETURNING id, name, created_at`,
-      [name]
+      `INSERT INTO design (name, build_cost, fee_rate, quality, created_at)
+      VALUES ($1, $2, $3, $4, NOW())
+      RETURNING id, name, build_cost, fee_rate, quality, created_at`,
+      [name, build_cost, fee_rate, quality]
     );
 
     return result.rows[0];
   }
 
-  // 🟩 Update a design by ID
   static async updateById(id, data) {
     const fields = [];
     const values = [];
     let paramIndex = 1;
 
-    if (data.name) {
+    if (data.name !== undefined) {
       fields.push(`name = $${paramIndex++}`);
       values.push(data.name);
+    }
+
+    if (data.build_cost !== undefined) {
+      fields.push(`build_cost = $${paramIndex++}`);
+      values.push(data.build_cost);
+    }
+
+    if (data.fee_rate !== undefined) {
+      fields.push(`fee_rate = $${paramIndex++}`);
+      values.push(data.fee_rate);
+    }
+
+    if (data.quality !== undefined) {
+      fields.push(`quality = $${paramIndex++}`);
+      values.push(data.quality);
+    }
+
+    if (fields.length === 0) {
+      throw new Error("No fields provided to update");
     }
 
     values.push(id);
 
     const query = `
       UPDATE design
-      SET ${fields.join(", ")}
+      SET ${fields.join(", ")}, updated_at = NOW()
       WHERE id = $${paramIndex}
-      RETURNING id, name, created_at
+      RETURNING id, name, build_cost, fee_rate, quality, created_at, updated_at
     `;
 
     const result = await pool.query(query, values);
     return result.rows[0];
   }
+
 
   // 🟩 Delete a design by ID
   static async deleteById(id) {

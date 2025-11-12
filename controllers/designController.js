@@ -32,13 +32,14 @@ class designController {
   // 🟩 Create a new design
   static async create(req, res) {
     try {
-      const { name } = req.body;
+      const { name,build_cost,fee_rate,quality } = req.body;
 
       if (!name || name.trim() === "") {
         return res.status(400).json({ message: "Design name is required." });
       }
 
-      const newDesign = await designModel.create({ name });
+      const newDesign = await designModel.create({ name,build_cost ,fee_rate,quality});
+
       res.status(201).json(newDesign);
     } catch (error) {
       console.error("Error creating design:", error);
@@ -51,13 +52,12 @@ class designController {
     }
   }
 
-  // 🟩 Update a design
   static async update(req, res) {
     try {
       const { id } = req.params;
-      const { name } = req.body;
+      const { name,build_cost,fee_rate,quality } = req.body;
 
-      const updatedDesign = await designModel.updateById(id, { name });
+      const updatedDesign = await designModel.updateById(id, { name,build_cost,fee_rate,quality });
 
       if (!updatedDesign) {
         return res.status(404).json({ message: "Design not found." });
@@ -70,7 +70,6 @@ class designController {
     }
   }
 
-  // 🟩 Delete a design
   static async delete(req, res) {
     try {
       const { id } = req.params;
