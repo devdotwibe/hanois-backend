@@ -12,7 +12,7 @@ export const up = (pgm) => {
 
     pgm.addColumns('providers', {
 
-        provider_id: { type: 'integer[]', notNull: false  },
+        provider_ids: { type: 'integer[]', notNull: false  },
         service_id: { type: 'integer[]',  notNull: false },
      
     });
