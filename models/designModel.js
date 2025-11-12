@@ -17,9 +17,9 @@ class designModel {
     const { name,build_cost,fee_rate,quality } = data;
 
     const result = await pool.query(
-      `INSERT INTO design (name, build_cost, fee_rate, quality, created_at)
+      `INSERT INTO design (name, cost, rate, quality, created_at)
       VALUES ($1, $2, $3, $4, NOW())
-      RETURNING id, name, build_cost, fee_rate, quality, created_at`,
+      RETURNING id, name, cost, rate, quality, created_at`,
       [name, build_cost, fee_rate, quality]
     );
 
