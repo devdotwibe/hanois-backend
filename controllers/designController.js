@@ -29,7 +29,6 @@ class designController {
     }
   }
 
-  // 🟩 Create a new design
   static async create(req, res) {
     try {
       const { name,build_cost,fee_rate,quality } = req.body;
@@ -65,7 +64,16 @@ class designController {
 
       res.status(200).json(updatedDesign);
     } catch (error) {
+      
       console.error("Error updating design:", error);
+
+      if (error.field) {
+        return res.status(409).json({
+          field: error.field,
+          message: error.message,
+        });
+      }
+
       res.status(500).json({ message: "Server error while updating design." });
     }
   }
