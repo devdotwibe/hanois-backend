@@ -61,7 +61,7 @@ class designModel {
       UPDATE design
       SET ${fields.join(", ")}, updated_at = NOW()
       WHERE id = $${paramIndex}
-      RETURNING id, name, build_cost, fee_rate, quality, created_at, updated_at
+      RETURNING id, name,cost,rate, quality, created_at, updated_at
     `;
 
     const result = await pool.query(query, values);
