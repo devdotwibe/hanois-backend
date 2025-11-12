@@ -12,19 +12,16 @@ const authenticateToken = (req, res, next) => {
     });
   }
 
-   req.user = user;
-   next();
-
-  // jwt.verify(token, config.jwt.secret, (err, user) => {
-  //   // if (err) {
-  //   //   return res.status(403).json({ 
-  //   //     success: false,
-  //   //     error: 'Invalid or expired token' 
-  //   //   });
-  //   // }
-  //   req.user = user;
-  //   next();
-  // });
+  jwt.verify(token, config.jwt.secret, (err, user) => {
+    // if (err) {
+    //   return res.status(403).json({ 
+    //     success: false,
+    //     error: 'Invalid or expired token' 
+    //   });
+    // }
+    req.user = user;
+    next();
+  });
 
     // next();
 
