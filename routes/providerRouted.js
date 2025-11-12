@@ -28,10 +28,11 @@ router.put('/update-profile/:providerId', authenticateToken, updateProviderProfi
 router.delete('/:id', authenticateToken, deleteProvider);
 router.put('/:id', authenticateToken, updateProvider);
 
+router.get("/get_leads", authenticateToken, getLeads);
+
 router.get('/:id', authenticateToken, getProviderById);
 
 router.get("/by-category/:categoryId", getProvidersByCategory);
 
-router.get("/get_leads", authenticateToken, getLeads);
 
 module.exports = router;
