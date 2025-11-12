@@ -60,7 +60,7 @@ class WorkModel {
         location || null,
         land_size || null,
         Number(luxury_level) || null,
-        services?.length ? services : null,   
+        service_ids?.length ? service_ids : null,   
         construction_budget || null,
         basement || null,
         provider_id?.length ? provider_id : null,
