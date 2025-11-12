@@ -12,7 +12,7 @@ class WorkModel {
         location,
         land_size,
         luxury_level,
-        services,
+        service_ids,
         construction_budget,
         basement,
         listing_style
@@ -28,10 +28,11 @@ class WorkModel {
             location,
             land_size,
             luxury_level,
-            services,
+            service_ids,
             construction_budget,
             basement,
             listing_style,
+            provider_id,
             created_at
         )
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, NOW())
@@ -44,10 +45,11 @@ class WorkModel {
             location,
             land_size,
             luxury_level,
-            services,
+            service_ids,
             construction_budget,
             basement,
             listing_style,
+            provider_id,
             created_at
         `,
         [
@@ -58,10 +60,10 @@ class WorkModel {
         location || null,
         land_size || null,
         Number(luxury_level) || null,
-        Number(services) || null,
+        services?.length ? services : null,   
         construction_budget || null,
         basement || null,
-        listing_style || null,
+        provider_id?.length ? provider_id : null,
         ]
     );
 

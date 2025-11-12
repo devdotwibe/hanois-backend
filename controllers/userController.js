@@ -196,10 +196,11 @@ exports.add_project = async (req, res, next) => {
       location,
       landSize,
       luxuryLevel,
-      services,
+      service_ids, 
       constructionBudget,
       basement,
-      listingStyle
+      listingStyle,
+      provider_id  
     } = req.body;
 
     if (!title) {
@@ -218,11 +219,11 @@ exports.add_project = async (req, res, next) => {
       location: location || null,
       land_size: landSize || null,
       luxury_level: Number(luxuryLevel) || null,
-      services: Number(services) || null,
+      service_ids: service_ids || [],  
       construction_budget: constructionBudget || null,
       basement: basement || null,
       listing_style: listingStyle || null,
-
+      provider_id: provider_id || [], 
       created_at: new Date(),
     });
 
