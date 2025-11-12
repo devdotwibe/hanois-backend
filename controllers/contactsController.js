@@ -27,21 +27,19 @@ exports.createContact = async (req, res, next) => {
       notes: notes || null,
     });
 
-    // 📨 Send email to admin
-let adminEmail;
+        let adminEmail;
 
-// Try fetching from settings table
-try {
-  const setting = await SettingsModel.findByKey('admin_email');
-  adminEmail = setting?.value;
-} catch (err) {
-  console.error("⚠️ Failed to fetch admin_email from settings:", err);
-}
+        // Try fetching from settings table
+        try {
+          const setting = await SettingsModel.findByKey('admin_email');
+          adminEmail = setting?.value;
+        } catch (err) {
+          console.error("⚠️ Failed to fetch admin_email from settings:", err);
+        }
 
-// Fallback to .env if not found
-if (!adminEmail) {
-  adminEmail = config.mail.adminEmail;
-}
+        if (!adminEmail) {
+          adminEmail = config.mail.adminEmail;
+  }
 
 
     console.log("📮 Sending admin email to:", adminEmail);
