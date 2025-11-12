@@ -16,6 +16,19 @@ class designModel {
 
     const { name,build_cost,fee_rate,quality } = data;
 
+    const existing = await pool.query(
+      `SELECT id FROM design WHERE LOWER(rate) = LOWER($1) LIMIT 1`,
+      [fee_rate]
+    );
+
+    if (existing.rows.length > 0) {
+
+        const error = new Error("Design with this Build Cost already exists");
+
+        error.field = "build_cost";
+        throw error;
+      }
+    
     const result = await pool.query(
       `INSERT INTO design (name, cost, rate, quality, created_at)
       VALUES ($1, $2, $3, $4, NOW())
@@ -30,6 +43,20 @@ class designModel {
     const fields = [];
     const values = [];
     let paramIndex = 1;
+
+     const existing = await pool.query(
+      `SELECT id FROM design WHERE LOWER(rate) = LOWER($1) LIMIT 1`,
+      [data.build_cost]
+    );
+
+    if (existing.rows.length > 0) {
+
+      const error = new Error("Design with this Build Cost already exists");
+      
+      error.field = "build_cost";
+      throw error;
+    }
+
 
     if (data.name !== undefined) {
       fields.push(`name = $${paramIndex++}`);
