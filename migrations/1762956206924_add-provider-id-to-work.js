@@ -12,8 +12,8 @@ export const up = (pgm) => {
 
     pgm.addColumns('providers', {
 
-        provider_ids: { type: 'integer[]', notNull: false  },
-        service_id: { type: 'integer[]',  notNull: false },
+        provider_id: { type: 'integer[]', notNull: false  },
+        service_ids: { type: 'integer[]',  notNull: false },
      
     });
 };
@@ -26,6 +26,6 @@ export const up = (pgm) => {
 export const down = (pgm) => {
       pgm.dropColumns('providers', [
         'provider_id',
-        'service_id'
+        'service_ids'
      ]);
 };
