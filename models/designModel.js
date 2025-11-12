@@ -16,10 +16,10 @@ class designModel {
 
     const { name,build_cost,fee_rate,quality } = data;
 
-    if (fee_rate !== undefined) {
+   if (fee_rate !== undefined) {
       const existing = await pool.query(
-        `SELECT id FROM design WHERE rate = $1 AND id <> $2 LIMIT 1`,
-        [fee_rate, id]
+        `SELECT id FROM design WHERE rate = $1 LIMIT 1`,
+        [fee_rate]
       );
 
       if (existing.rows.length > 0) {
