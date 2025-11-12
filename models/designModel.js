@@ -37,12 +37,12 @@ class designModel {
     }
 
     if (data.build_cost !== undefined) {
-      fields.push(`build_cost = $${paramIndex++}`);
+      fields.push(`cost = $${paramIndex++}`);
       values.push(data.build_cost);
     }
 
     if (data.fee_rate !== undefined) {
-      fields.push(`fee_rate = $${paramIndex++}`);
+      fields.push(`rate = $${paramIndex++}`);
       values.push(data.fee_rate);
     }
 
