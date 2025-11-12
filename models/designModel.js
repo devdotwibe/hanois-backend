@@ -52,7 +52,7 @@ class designModel {
 
       if (existing.rows.length > 0) {
         const error = new Error("Design with this Fee Rate already exists");
-        error.field = "build_cost";
+        error.field = "buildCost";
         throw error;
       }
     }
