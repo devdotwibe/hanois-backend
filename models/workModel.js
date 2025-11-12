@@ -15,7 +15,8 @@ class WorkModel {
         service_ids,
         construction_budget,
         basement,
-        listing_style
+        listing_style,
+        provider_id
     } = data;
 
     const result = await pool.query(
