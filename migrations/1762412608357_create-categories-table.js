@@ -1,12 +1,14 @@
+/* eslint-disable camelcase */
+
 /**
  * @type {import('node-pg-migrate').ColumnDefinitions | undefined}
  */
-export const shorthands = undefined;
+const shorthands = undefined;
 
 /**
- * @param pgm {import('node-pg-migrate').MigrationBuilder}
+ * @param {import('node-pg-migrate').MigrationBuilder} pgm
  */
-export const up = (pgm) => {
+exports.up = (pgm) => {
   pgm.createTable('categories', {
     id: 'id', // shorthand for serial primary key
     name: { type: 'text', notNull: true, unique: true },
@@ -19,8 +21,8 @@ export const up = (pgm) => {
 };
 
 /**
- * @param pgm {import('node-pg-migrate').MigrationBuilder}
+ * @param {import('node-pg-migrate').MigrationBuilder} pgm
  */
-export const down = (pgm) => {
+exports.down = (pgm) => {
   pgm.dropTable('categories');
 };
