@@ -43,6 +43,13 @@ class designController {
     } catch (error) {
       console.error("Error creating design:", error);
 
+      if (error.field) {
+        return res.status(409).json({
+          field: error.field,
+          message: error.message,
+        });
+      }
+
       if (error.code === "23505") {
         return res.status(409).json({ message: "Design name already exists." });
       }
