@@ -1,14 +1,14 @@
 /**
  * @type {import('node-pg-migrate').ColumnDefinitions | undefined}
  */
-export const shorthands = undefined;
+const shorthands = undefined;
 
 /**
- * @param pgm {import('node-pg-migrate').MigrationBuilder}
+ * @param  {import('node-pg-migrate').MigrationBuilder} pgm
  * @param run {() => void | undefined}
  * @returns {Promise<void> | void}
  */
-export const up = (pgm) => {
+exports.up = (pgm) => {
 
     pgm.addColumns('work', {
 
@@ -19,11 +19,11 @@ export const up = (pgm) => {
 };
 
 /**
- * @param pgm {import('node-pg-migrate').MigrationBuilder}
+ * @param  {import('node-pg-migrate').MigrationBuilder} pgm
  * @param run {() => void | undefined}
  * @returns {Promise<void> | void}
  */
-export const down = (pgm) => {
+exports.down = (pgm) => {
       pgm.dropColumns('work', [
         'provider_id',
         'service_ids'
