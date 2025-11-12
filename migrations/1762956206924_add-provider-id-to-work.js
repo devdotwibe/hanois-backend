@@ -10,7 +10,7 @@ export const shorthands = undefined;
  */
 export const up = (pgm) => {
 
-    pgm.addColumns('providers', {
+    pgm.addColumns('work', {
 
         provider_id: { type: 'integer[]', notNull: false  },
         service_ids: { type: 'integer[]',  notNull: false },
@@ -24,7 +24,7 @@ export const up = (pgm) => {
  * @returns {Promise<void> | void}
  */
 export const down = (pgm) => {
-      pgm.dropColumns('providers', [
+      pgm.dropColumns('work', [
         'provider_id',
         'service_ids'
      ]);
