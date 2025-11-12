@@ -32,6 +32,6 @@ router.get('/:id', authenticateToken, getProviderById);
 
 router.get("/by-category/:categoryId", getProvidersByCategory);
 
-router.get("/get_leads", getLeads);
+router.get("/get_leads", authenticateToken, getLeads);
 
 module.exports = router;
