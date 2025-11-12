@@ -44,14 +44,14 @@ class designModel {
     const values = [];
     let paramIndex = 1;
 
-    if (data.build_cost !== undefined) {
+    if (data.fee_rate !== undefined) {
       const existing = await pool.query(
-        `SELECT id FROM design WHERE cost = $1 AND id <> $2 LIMIT 1`,
-        [data.build_cost, id]
+        `SELECT id FROM design WHERE rate = $1 AND id <> $2 LIMIT 1`,
+        [data.fee_rate, id]
       );
 
       if (existing.rows.length > 0) {
-        const error = new Error("Design with this Build Cost already exists");
+        const error = new Error("Design with this Fee Rate already exists");
         error.field = "build_cost";
         throw error;
       }
