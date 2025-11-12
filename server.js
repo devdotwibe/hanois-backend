@@ -96,6 +96,7 @@ app.use("/api/design", designRoutes);
 
 
 app.use('/api/projects', projectRoutes);
+
 app.use('/api/project-images', projectImageRoutes);
 
 
