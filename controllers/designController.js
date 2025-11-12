@@ -64,7 +64,7 @@ class designController {
 
       res.status(200).json(updatedDesign);
     } catch (error) {
-      
+
       console.error("Error updating design:", error);
 
       if (error.field) {
@@ -74,7 +74,7 @@ class designController {
         });
       }
 
-      res.status(500).json({ message: "Server error while updating design." });
+      res.status(500).json({ message: "Server error while updating design." ,error});
     }
   }
 
