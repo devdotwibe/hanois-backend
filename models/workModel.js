@@ -19,7 +19,7 @@ class WorkModel {
         provider_id
     } = data;
 
-    const result = await pool.query(
+   const result = await pool.query(
         `
         INSERT INTO work (
             user_id,
@@ -36,7 +36,7 @@ class WorkModel {
             provider_id,
             created_at
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, NOW())
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW())
         RETURNING 
             id,
             user_id,
@@ -54,19 +54,21 @@ class WorkModel {
             created_at
         `,
         [
-        user_id || null,
-        title || null,
-        notes || null,
-        Number(project_type) || null,
-        location || null,
-        land_size || null,
-        Number(luxury_level) || null,
-        service_ids?.length ? service_ids : null,   
-        construction_budget || null,
-        basement || null,
-        provider_id?.length ? provider_id : null,
+            user_id || null,
+            title || null,
+            notes || null,
+            Number(project_type) || null,
+            location || null,
+            land_size || null,
+            Number(luxury_level) || null,
+            service_ids?.length ? service_ids : null,
+            construction_budget || null,
+            basement || null,
+            listing_style || null,      // <-- added this
+            provider_id?.length ? provider_id : null,
         ]
     );
+
 
     return result.rows[0];
     }
