@@ -1,13 +1,14 @@
+/* eslint-disable camelcase */
+
 /**
  * @type {import('node-pg-migrate').ColumnDefinitions | undefined}
  */
-export const shorthands = undefined;
+const shorthands = undefined;
 
 /**
- * @param pgm {import('node-pg-migrate').MigrationBuilder}
+ * @param {import('node-pg-migrate').MigrationBuilder} pgm
  */
-export const up = (pgm) => {
-
+exports.up = (pgm) => {
   pgm.createTable('sections', {
     id: { type: 'bigserial', primaryKey: true },
     key: { type: 'varchar(255)', notNull: true, unique: true },
@@ -39,9 +40,9 @@ export const up = (pgm) => {
 };
 
 /**
- * @param pgm {import('node-pg-migrate').MigrationBuilder}
+ * @param {import('node-pg-migrate').MigrationBuilder} pgm
  */
-export const down = (pgm) => {
+exports.down = (pgm) => {
   pgm.dropTable('field_translations');
   pgm.dropTable('fields');
   pgm.dropTable('sections');
