@@ -16,7 +16,12 @@ class WorkModel {
         construction_budget,
         basement,
         listing_style,
-        provider_id
+        provider_id,
+        build_area,
+        cost_finsh,
+        suggest_cost,
+        total_cost,
+        status,
     } = data;
 
    const result = await pool.query(
@@ -34,9 +39,13 @@ class WorkModel {
             basement,
             listing_style,
             provider_id,
+            build_area,
+            cost_finsh,
+            suggest_cost,
+            total_cost,
             created_at
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW())
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'Review Awaiting',NOW())
         RETURNING 
             id,
             user_id,
@@ -51,6 +60,11 @@ class WorkModel {
             basement,
             listing_style,
             provider_id,
+            build_area,
+            cost_finsh,
+            suggest_cost,
+            total_cost,
+            status,
             created_at
         `,
         [
@@ -64,8 +78,12 @@ class WorkModel {
             service_ids?.length ? service_ids : null,
             construction_budget || null,
             basement || null,
-            listing_style || null,      // <-- added this
+            listing_style || null,     
             provider_id?.length ? provider_id : null,
+            build_area || null,  
+            cost_finsh || null,  
+            suggest_cost || null,  
+            total_cost || null,  
         ]
     );
 

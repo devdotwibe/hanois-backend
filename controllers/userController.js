@@ -200,7 +200,11 @@ exports.add_project = async (req, res, next) => {
       constructionBudget,
       basement,
       listingStyle,
-      provider_id  
+      provider_id,
+      build_area,
+      cost_finsh,
+      suggest_cost,
+      total_cost,
     } = req.body;
 
     if (!title) {
@@ -225,6 +229,10 @@ exports.add_project = async (req, res, next) => {
       listing_style: listingStyle || null,
       provider_id: provider_id || [], 
       created_at: new Date(),
+      build_area: build_area || null,
+      cost_finsh: cost_finsh || null,
+      suggest_cost: suggest_cost || null,
+      total_cost: total_cost || null,
     });
 
     return successResponse(
