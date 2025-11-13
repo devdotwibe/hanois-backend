@@ -8,6 +8,7 @@ const { sendMail } = require('../config/mailer');
 const { validateEmail } = require('../utils/validateEmail');
 const pool = require("../db/pool");
 const JWT_SECRET = "a3f9b0e1a8c2d34e5f67b89a0c1d2e3f4a5b6c7d8e9f00112233445566778899";
+const UsersModel = require('../models/usersModel');
 
 exports.resetPassword = async (req, res, next) => {
 
@@ -561,7 +562,7 @@ exports.getLeads = async (req, res) => {
 
     const userIds = [...new Set(works.map(w => w.user_id).filter(Boolean))];
 
-    const users = await UserModel.findByIds(userIds); 
+    const users = await UsersModel.findByIds(userIds); 
 
     const userMap = {};
     for (const u of users) {
