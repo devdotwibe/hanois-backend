@@ -21,7 +21,6 @@ class WorkModel {
         cost_finsh,
         suggest_cost,
         total_cost,
-        status,
     } = data;
 
    const result = await pool.query(

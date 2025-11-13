@@ -29,7 +29,10 @@ exports.up = (pgm) => {
 exports.down = (pgm) => {
 
      pgm.dropColumns('work', [
-        'provider_id',
-        'service_ids'
+        'build_area',
+        'cost_finsh',
+        'suggest_cost',
+        'total_cost',
+        'status'
      ]);
 };
