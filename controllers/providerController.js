@@ -540,23 +540,43 @@ exports.getAllProviderServices = async (req, res, next) => {
 
 exports.getLeads = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    if (!userId) {
+    const providerId = req.user?.id;
+
+    if (!providerId) {
       return res.status(400).json({ success: false, error: "User ID not found" });
     }
 
-    const query = `
+    const workQuery = `
       SELECT *
       FROM work
-      WHERE $1 = ANY(provider_id)  -- provider_id is integer[]
+      WHERE $1 = ANY(provider_id)
       ORDER BY created_at DESC
     `;
 
-    const { rows } = await pool.query(query, [userId]);
+    const { rows: works } = await pool.query(workQuery, [providerId]);
 
-    res.json({ success: true, data: rows });
+    if (!works.length) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const userIds = [...new Set(works.map(w => w.user_id).filter(Boolean))];
+
+    const users = await UserModel.findByIds(userIds); 
+
+    const userMap = {};
+    for (const u of users) {
+      userMap[u.id] = u;
+    }
+
+    const result = works.map(w => ({
+      ...w,
+      user: userMap[w.user_id] || null,
+    }));
+
+    res.json({ success: true, data: result });
   } catch (err) {
-    console.error(err);
+    console.error("Error in getLeads:", err);
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
+
