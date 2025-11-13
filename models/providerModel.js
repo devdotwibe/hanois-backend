@@ -70,7 +70,6 @@ static async findById(id) {
        image,
        categories_id,
        service_id,
-       service_notes,
        created_at
      FROM providers
      WHERE id = $1`,
@@ -112,7 +111,6 @@ static async updateById(id, data) {
   addField('other_link', data.other_link || data.other);
   addField('professional_headline', data.professional_headline);
   addField('image', data.image);
-  addField('service_notes', data.service_notes);
 
   // Handle categories_id / service_id arrays or json depending on your DB column type
   if (data.categories_id !== undefined) {

@@ -58,7 +58,7 @@ exports.getProvidersByCategory = async (req, res) => {
 
 exports.registerProvider = async (req, res, next) => {
   try {
-    const { name, email, phone, register_no, password, location, team_size, service, website, social_media,service_notes } = req.body;
+    const { name, email, phone, register_no, password, location, team_size, service, website, social_media } = req.body;
 
 
     const emailCheck = await validateEmail(email);
@@ -87,7 +87,6 @@ exports.registerProvider = async (req, res, next) => {
       service,
       website,
       social_media,
-      service_notes
     });
 
 
@@ -306,7 +305,6 @@ exports.updateProvider = async (req, res, next) => {
       facebook,
       instagram,
       other_link,
-      service_notes
     } = req.body;
 
     // Start transaction
@@ -325,7 +323,6 @@ exports.updateProvider = async (req, res, next) => {
       social_media,
       categories_id,
       service_id,
-      service_notes,
       notes,
       facebook,
       instagram,
