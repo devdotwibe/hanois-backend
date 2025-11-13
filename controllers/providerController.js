@@ -569,9 +569,15 @@ exports.getLeads = async (req, res) => {
       userMap[u.id] = u;
     }
 
+    const categoryQuery = `SELECT * FROM categories`;
+    const { rows: categories } = await pool.query(categoryQuery);
+    const categoryMap = {};
+    for (const c of categories) categoryMap[c.id] = c;
+
     const result = works.map(w => ({
       ...w,
       user: userMap[w.user_id] || null,
+      category: categoryMap[w.project_type] || null,
     }));
 
     res.json({ success: true, data: result });
