@@ -31,6 +31,13 @@ class UsersModel {
     return result.rows[0];
   }
 
+  static async findByIds (ids) {
+    if (!ids?.length) return [];
+    const query = `SELECT * FROM users WHERE id = ANY($1)`;
+    const { rows } = await pool.query(query, [ids]);
+    return rows;
+  };
+
   static async updateById(id, data) {
     const fields = [];
     const values = [];
