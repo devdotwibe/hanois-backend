@@ -80,19 +80,17 @@ exports.updateProfile = async (req, res, next) => {
   }
 };
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/profile/"); 
-  },
-  filename: function (req, file, cb) {
-    const uniqueName = Date.now() + "-" + file.originalname;
-    cb(null, uniqueName);
-  }
-});
+  const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, "uploads/profile/");
+    },
+    filename: function (req, file, cb) {
+      const uniqueName = Date.now() + "-" + file.originalname;
+      cb(null, uniqueName);
+    }
+  });
 
-const upload = multer({ storage });
-
-module.exports = upload;
+exports.upload = multer({ storage });
 
 
 exports.getUsers = async (req, res, next) => {

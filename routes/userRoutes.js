@@ -10,6 +10,7 @@ const {
   getMyProjects,
   getPublicProjects,
   forgotPassword,
+  upload,
   updateProfile
 } = require('../controllers/userController');
 const { validateRegistration, validateLogin } = require('../middleware/validation');
