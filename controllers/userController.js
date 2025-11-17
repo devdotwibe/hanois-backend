@@ -8,6 +8,8 @@ const { validateEmail } = require('../utils/validateEmail');
 const pool = require("../db/pool");
 const WorkModel = require('../models/workModel');
 const { sendMail } = require('../config/mailer');
+const multer = require("multer");
+const path = require("path");
 
 exports.registerUser = async (req, res, next) => {
   try {
@@ -44,6 +46,54 @@ exports.registerUser = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.updateProfile = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    const { name, phone } = req.body;
+    const profileImage = req.file ? req.file.filename : null;
+
+    const existingUser = await UsersModel.findById(userId);
+
+    if (!existingUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    let updateData = {};
+
+    if (name) updateData.name = name;
+    if (phone) updateData.phone = phone;
+    if (profileImage) updateData.profile_image = profileImage;
+
+    const updatedUser = await UsersModel.updateById(userId, updateData);
+
+    return successResponse(
+      res,
+      { user: updatedUser },
+      "Profile updated successfully",
+      200
+    );
+
+  } catch (err) {
+    next(err);
+  }
+};
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/profile/"); 
+  },
+  filename: function (req, file, cb) {
+    const uniqueName = Date.now() + "-" + file.originalname;
+    cb(null, uniqueName);
+  }
+});
+
+const upload = multer({ storage });
+
+module.exports = upload;
+
 
 exports.getUsers = async (req, res, next) => {
   try {

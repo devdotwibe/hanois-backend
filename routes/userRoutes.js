@@ -9,7 +9,8 @@ const {
   add_project ,
   getMyProjects,
   getPublicProjects,
-  forgotPassword
+  forgotPassword,
+  updateProfile
 } = require('../controllers/userController');
 const { validateRegistration, validateLogin } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
@@ -27,6 +28,13 @@ router.get("/public-project", getPublicProjects);
 router.get('/',authenticateToken, getUsers);
 
 router.get('/get',authenticateToken, User);
+
+router.post(
+  '/update-profile',
+  authenticateToken,
+  upload.single('profile_image'),
+  updateProfile
+);
 
 router.delete('/:id', authenticateToken, deleteUser);
 

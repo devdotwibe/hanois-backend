@@ -55,6 +55,12 @@ class UsersModel {
       fields.push(`phone = $${paramIndex++}`);
       values.push(data.phone);
     }
+
+    if (data.profile_image) {
+      fields.push(`profile_image = $${paramIndex++}`);
+      values.push(data.profile_image);
+    }
+
     if (data.password) {
       const hashedPassword = await bcrypt.hash(data.password, 10);
       fields.push(`password = $${paramIndex++}`);
@@ -64,7 +70,7 @@ class UsersModel {
     values.push(id);
 
     const result = await pool.query(
-      `UPDATE users SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING id, name, email, phone, created_at`,
+      `UPDATE users SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING id, name, email, phone,profile_image, created_at`,
       values
     );
     return result.rows[0];
