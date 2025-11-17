@@ -4,6 +4,7 @@ const {
   registerUser, 
   getUsers, 
   login, 
+  User,
   deleteUser,
   add_project ,
   getMyProjects,
@@ -24,6 +25,8 @@ router.get("/my-projects", authenticateToken, getMyProjects);
 router.get("/public-project", getPublicProjects);
 
 router.get('/',authenticateToken, getUsers);
+
+router.get('/get',authenticateToken, User);
 
 router.delete('/:id', authenticateToken, deleteUser);
 

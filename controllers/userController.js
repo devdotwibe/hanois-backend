@@ -54,6 +54,25 @@ exports.getUsers = async (req, res, next) => {
   }
 };
 
+exports.User = async (req, res, next) => {
+  try {
+
+    const userId = req.user.id;  
+
+    const user = await UsersModel.getById(userId);
+
+    if (!user) {
+      
+      return errorResponse(res, "User not found", 404);
+    }
+
+    successResponse(res, user, "Logged-in user retrieved successfully");
+  } catch (err) {
+    next(err);
+  }
+};
+
+
 // exports.loginUser = async (req, res, next) => {
 //   try {
 //     const { email, password } = req.body;
