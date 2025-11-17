@@ -9,23 +9,24 @@ const {
   deleteFaq,
 } = require("../controllers/faqController");
 
+const { authenticateToken } = require('../middleware/auth');
 /* ======================================================
    🟩 FAQ ROUTES
    ====================================================== */
 
 // Create new FAQ or update existing (handles English & Arabic)
-router.post("/", createFaq);
+router.post("/",authenticateToken, createFaq);
 
 // Get all FAQs
-router.get("/", getFaqs);
+router.get("/",authenticateToken, getFaqs);
 
 // Get single FAQ by ID
-router.get("/:id", getFaqById);
+router.get("/:id",authenticateToken, getFaqById);
 
 // Update FAQ by ID
-router.put("/:id", updateFaq);
+router.put("/:id",authenticateToken, updateFaq);
 
 // Delete FAQ by ID
-router.delete("/:id", deleteFaq);
+router.delete("/:id",authenticateToken, deleteFaq);
 
 module.exports = router;
