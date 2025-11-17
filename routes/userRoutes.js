@@ -23,7 +23,7 @@ router.get("/my-projects", authenticateToken, getMyProjects);
 
 router.get("/public-project", getPublicProjects);
 
-router.get('/', getUsers);
+router.get('/',authenticateToken, getUsers);
 
 router.delete('/:id', authenticateToken, deleteUser);
 
