@@ -8,6 +8,7 @@ const {
   add_project ,
   getMyProjects,
   getPublicProjects,
+  forgotPassword
 } = require('../controllers/userController');
 const { validateRegistration, validateLogin } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
@@ -25,5 +26,7 @@ router.get("/public-project", getPublicProjects);
 router.get('/', getUsers);
 
 router.delete('/:id', authenticateToken, deleteUser);
+
+router.post('/forgot-password', forgotPassword);
 
 module.exports = router;

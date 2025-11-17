@@ -185,6 +185,78 @@ exports.deleteUser = async (req, res, next) => {
   }
 };
 
+exports.forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    let account = null;
+    let role = null;
+
+    // Look inside users table
+    const userResult = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    if (userResult.rows.length > 0) {
+      account = userResult.rows[0];
+      role = "user";
+    }
+
+    // Look inside providers table
+    if (!account) {
+      const providerResult = await pool.query("SELECT * FROM providers WHERE email = $1", [email]);
+      if (providerResult.rows.length > 0) {
+        account = providerResult.rows[0];
+        role = "provider";
+      }
+    }
+
+    if (!account) {
+      throw new NotFoundError("Email not found");
+    }
+
+    // Create reset token
+    const resetToken = jwt.sign(
+      { id: account.id, email: account.email, role },
+      "a3f9b0e1a8c2d34e5f67b89a0c1d2e3f4a5b6c7d8e9f00112233445566778899",
+      { expiresIn: "1h" }
+    );
+
+    // Same reset link structure you already use
+    const resetLink = `https://hanois.dotwibe.com/login?reset-password=${resetToken}`;
+
+    const html = `
+      <div style="font-family: Arial; padding:20px;">
+        <h2>Password Reset Request</h2>
+        <p>Click the button below to reset your password:</p>
+        <a href="${resetLink}" style="
+            display:inline-block;
+            padding:12px 20px;
+            background:#28a745;
+            color:white;
+            text-decoration:none;
+            border-radius:5px;">
+            Reset Password
+        </a>
+        <p>If the button doesn't work, use this link:</p>
+        <p>${resetLink}</p>
+      </div>
+    `;
+
+    await sendMail({
+      to: email,
+      subject: "Reset Your Password",
+      html,
+    });
+
+    return res.json({ message: "Password reset link sent to your email" });
+
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 
 exports.add_project = async (req, res, next) => {
