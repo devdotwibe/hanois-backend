@@ -141,7 +141,7 @@ exports.registerProvider = async (req, res, next) => {
                     border-radius: 6px;
                     font-weight: bold;
                     ">
-                    Reset Password
+                    Set Your Password
                 </a>
                 </div>
 
