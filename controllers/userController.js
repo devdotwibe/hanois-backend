@@ -7,6 +7,7 @@ const { ValidationError, AuthenticationError, ConflictError } = require('../util
 const { validateEmail } = require('../utils/validateEmail');
 const pool = require("../db/pool");
 const WorkModel = require('../models/workModel');
+const { sendMail } = require('../config/mailer');
 
 exports.registerUser = async (req, res, next) => {
   try {
