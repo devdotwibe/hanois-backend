@@ -10,14 +10,14 @@ const pool = require("../db/pool");
 const JWT_SECRET = "a3f9b0e1a8c2d34e5f67b89a0c1d2e3f4a5b6c7d8e9f00112233445566778899";
 const UsersModel = require('../models/usersModel');
 
-exports.resetPassword = async (req, res, next) => {
-
+  exports.resetPassword = async (req, res, next) => {
     try {
       const { token, password } = req.body;
 
       if (!token || !password) {
         return errorResponse(res, "Missing token or password", 400);
       }
+
       let decoded;
       try {
         decoded = jwt.verify(token, JWT_SECRET);
@@ -25,17 +25,34 @@ exports.resetPassword = async (req, res, next) => {
         return errorResponse(res, "Invalid or expired token", 400);
       }
 
-      const providerId = decoded.providerId;
+      // Support BOTH token types:
+      // 1. registration: { providerId }
+      // 2. forgot-password: { id, role: "provider" }
+
+      let providerId = decoded.providerId || null;
+
+      if (!providerId && decoded.role === "provider") {
+        providerId = decoded.id;
+      }
+
+      if (!providerId) {
+        return errorResponse(res, "Invalid provider token", 400);
+      }
+
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      await ProviderModel.updatePassword(providerId, hashedPassword);
+      // Update provider table
+      await pool.query(
+        "UPDATE providers SET password = $1 WHERE id = $2",
+        [hashedPassword, providerId]
+      );
 
-      successResponse(res, {}, "Password reset successful");
+      return successResponse(res, {}, "Password reset successful");
     } catch (err) {
       next(err);
     }
+  };
 
-};
 
 exports.getProvidersByCategory = async (req, res) => {
 

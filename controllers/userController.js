@@ -258,6 +258,37 @@ exports.forgotPassword = async (req, res, next) => {
   }
 };
 
+exports.resetUserPassword = async (req, res, next) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return errorResponse(res, "Missing token or password", 400);
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+      return errorResponse(res, "Invalid or expired token", 400);
+    }
+
+    if (decoded.role !== "user") {
+      return errorResponse(res, "Invalid user token", 400);
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await pool.query(
+      "UPDATE users SET password = $1 WHERE id = $2",
+      [hashedPassword, decoded.id]
+    );
+
+    return successResponse(res, {}, "Password reset successful");
+  } catch (err) {
+    next(err);
+  }
+};
 
 
 exports.add_project = async (req, res, next) => {
