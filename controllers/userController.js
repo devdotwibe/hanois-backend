@@ -59,10 +59,10 @@ exports.User = async (req, res, next) => {
 
     const userId = req.user.id;  
 
-    const user = await UsersModel.getById(userId);
+    const user = await UsersModel.findById(userId);
 
     if (!user) {
-      
+
       return errorResponse(res, "User not found", 404);
     }
 
