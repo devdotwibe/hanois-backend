@@ -404,46 +404,63 @@ exports.getMyProjects = async (req, res, next) => {
   }
 };
 
+
 exports.getPublicProjects = async (req, res, next) => {
   try {
-    const providerId = req.user?.id || null;
-
-    console.log("👉 providerId from token =", providerId);
-
-    const { rows: projects } = await pool.query(
+    // 1. Fetch all PUBLIC projects
+    const result = await pool.query(
       "SELECT * FROM work WHERE listing_style = 'public' ORDER BY id DESC"
     );
 
-    console.log("👉 Total public projects:", projects.length);
+    const projects = result.rows;
 
-    // Fetch leads
-    let leadWorkIds = [];
-
-    if (providerId) {
-      const { rows: leadRows } = await pool.query(
-        "SELECT work_id FROM leads WHERE provider_id = $1",
-        [providerId]
-      );
-
-      leadWorkIds = leadRows.map(r => r.work_id);
-
-      console.log("👉 Lead work_ids from DB =", leadWorkIds);
+    if (!projects.length) {
+      return res.json({ success: true, data: [] });
     }
 
-    // Filter
-    const filteredProjects = projects.filter(
-      project => !leadWorkIds.includes(project.id)
-    );
+    // 2. Extract ALL unique user_ids
+    const userIds = [
+      ...new Set(projects.map((p) => p.user_id).filter(Boolean))
+    ];
 
-    console.log("👉 Remaining projects after filter =", filteredProjects.map(p => p.id));
+    // 3. Fetch all users in one query
+    const users = await UsersModel.findByIds(userIds);
+
+    // user_id → user mapping
+    const userMap = {};
+    users.forEach(u => {
+      userMap[u.id] = u;
+    });
+
+    // 4. Fetch all categories (for project_type)
+    const { rows: categories } = await pool.query("SELECT * FROM categories");
+    const categoryMap = {};
+    categories.forEach(c => {
+      categoryMap[c.id] = c;
+    });
+
+    // 5. Fetch all services (optional)
+    const { rows: services } = await pool.query("SELECT * FROM services");
+    const serviceMap = {};
+    services.forEach(s => {
+      serviceMap[s.id] = s;
+    });
+
+    // 6. Build final result
+    const finalProjects = projects.map(p => ({
+      ...p,
+      user: userMap[p.user_id] || null,
+      category: categoryMap[p.project_type] || null,
+      service_list: p.service_ids ? p.service_ids.map(id => serviceMap[id]) : []
+    }));
 
     return res.json({
       success: true,
-      data: filteredProjects
+      data: finalProjects
     });
 
   } catch (err) {
-    console.error("❌ ERROR getPublicProjects:", err);
     next(err);
   }
 };
+

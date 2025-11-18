@@ -662,3 +662,24 @@ exports.addLead = async (req, res) => {
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
+exports.getLeadWorkIds = async (req, res) => {
+  try {
+    const providerId = req.user?.id;
+
+    const result = await pool.query(
+      "SELECT work_id FROM leads WHERE provider_id = $1",
+      [providerId]
+    );
+
+    const workIds = result.rows.map(r => r.work_id);
+
+    return res.json({
+      success: true,
+      workIds
+    });
+
+  } catch (err) {
+    console.error("Error fetching lead work IDs:", err);
+    res.status(500).json({ success: false, error: "Internal server error" });
+  }
+};
