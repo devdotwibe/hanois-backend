@@ -621,7 +621,6 @@ exports.getLeads = async (req, res) => {
   }
 };
 
-
 exports.addLead = async (req, res) => {
   try {
     const providerId = req.user?.id;
@@ -635,8 +634,8 @@ exports.addLead = async (req, res) => {
       return res.status(400).json({ success: false, error: "work_id is required" });
     }
 
-    // Check if lead already exists
-    const existing = await LeadsModel.find(providerId, work_id);
+    // Check existing
+    const existing = await LeadsModel.checkExistingLead(work_id, providerId);
 
     if (existing) {
       return res.json({
@@ -646,8 +645,11 @@ exports.addLead = async (req, res) => {
       });
     }
 
-    // Insert
-    const lead = await LeadsModel.addLead(providerId, work_id);
+    // Create new lead
+    const lead = await LeadsModel.createLead({
+      work_id,
+      provider_id: providerId
+    });
 
     return res.json({
       success: true,
@@ -660,4 +662,3 @@ exports.addLead = async (req, res) => {
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
-
