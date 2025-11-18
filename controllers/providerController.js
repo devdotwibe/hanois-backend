@@ -572,7 +572,6 @@ exports.getAllProviderServices = async (req, res, next) => {
     });
   }
 };
-
 exports.getLeads = async (req, res) => {
   try {
     const providerId = req.user?.id;
@@ -590,18 +589,17 @@ exports.getLeads = async (req, res) => {
     `;
     const { rows: workLeads } = await pool.query(workQuery, [providerId]);
 
-    // 2. Manual leads (include lead_created_at!)
+    // 2. Manual leads
     const manualLeadQuery = `
-     SELECT 
-  w.*, 
-  l.id AS lead_id,
-  l.status AS lead_status,
-  l.description AS lead_description,
-  l.created_at AS lead_created_at
-FROM leads l
-JOIN work w ON w.id = l.work_id
-WHERE l.provider_id = $1
-
+      SELECT 
+        w.*, 
+        l.id AS lead_id,
+        l.status AS lead_status,
+        l.description AS lead_description,
+        l.created_at AS lead_created_at
+      FROM leads l
+      JOIN work w ON w.id = l.work_id
+      WHERE l.provider_id = $1
     `;
     const { rows: manualLeads } = await pool.query(manualLeadQuery, [providerId]);
 
@@ -614,50 +612,57 @@ WHERE l.provider_id = $1
       return res.json({ success: true, data: [] });
     }
 
-    // 4. Sorting logic
+    // 4. Sorting
     allWorks.sort((a, b) => {
       const aTime = a.lead_created_at || a.system_created_at || a.created_at;
       const bTime = b.lead_created_at || b.system_created_at || b.created_at;
       return new Date(bTime) - new Date(aTime);
     });
 
-    // 5. User + Category mapping
+    // 5. Get users
     const userIds = [...new Set(allWorks.map(w => w.user_id).filter(Boolean))];
     const users = await UsersModel.findByIds(userIds);
     const userMap = {};
     users.forEach(u => (userMap[u.id] = u));
 
-    const { rows: categories } = await pool.query(`SELECT * FROM categories`);
+    // 6. Get categories
+    const { rows: categories } = await pool.query("SELECT * FROM categories");
     const categoryMap = {};
     categories.forEach(c => (categoryMap[c.id] = c));
 
-    // 6. Build final API response
-   const result = allWorks.map(w => ({
-  ...w,
+    // 7. Get luxury levels (design table)
+    const { rows: designList } = await pool.query("SELECT * FROM design");
+    const designMap = {};
+    designList.forEach(d => (designMap[d.id] = d));
 
-  user: userMap[w.user_id] || null,
-  category: categoryMap[w.project_type] || null,
+    // 8. Build final response
+    const result = allWorks.map(w => ({
+      ...w,
 
-  // Lead table fields (manual updates)
-  lead_id: w.lead_id || null,
- status: w.lead_status ?? "Awaiting Review",
+      user: userMap[w.user_id] || null,
+      category: categoryMap[w.project_type] || null,
 
- proposal_note: w.lead_description ?? "",
+      lead_id: w.lead_id || null,
+      status: w.lead_status ?? "Awaiting Review",
+      proposal_note: w.lead_description ?? "",
+      lead_created_at: w.lead_created_at || null,
 
+      // 🔥 Luxury info added
+      luxury_level: w.luxury_level,
+      luxury_level_details: designMap[w.luxury_level] || null,
+      luxury_type: designMap[w.luxury_level]?.name || null,
 
-  lead_created_at: w.lead_created_at || null,
-
-  lead_source: manualLeads.find(m => m.id === w.id) ? "manual" : "system"
-}));
-
+      lead_source: manualLeads.find(m => m.id === w.id) ? "manual" : "system"
+    }));
 
     return res.json({ success: true, data: result });
 
   } catch (err) {
     console.error("Error in getLeads:", err);
-    return res.status(500).json({ success: false, error: "Internal server error" });
+    res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
+
 
 exports.addLead = async (req, res) => {
   try {
