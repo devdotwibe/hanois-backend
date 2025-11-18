@@ -724,28 +724,49 @@ exports.getLeadWorkIds = async (req, res) => {
 exports.updateLead = async (req, res) => {
   try {
     const providerId = req.user?.id;
-    const { work_id, status, description } = req.body;
+    const { lead_id, work_id, status, proposal_note } = req.body;
 
     if (!providerId) {
       return res.status(400).json({ success: false, error: "Provider ID not found" });
     }
 
-    if (!work_id) {
-      return res.status(400).json({ success: false, error: "work_id is required" });
+    if (!lead_id && !work_id) {
+      return res.status(400).json({ success: false, error: "Either lead_id or work_id is required" });
     }
 
-    // update leads table
-    const result = await pool.query(
-      `
-      UPDATE leads
-      SET status = $1,
-          description = $2,
-          updated_at = NOW()
-      WHERE work_id = $3 AND provider_id = $4
-      RETURNING *;
-      `,
-      [status, description, work_id, providerId]
-    );
+    let result;
+
+    // ---------------------------------------------------------
+    // 🔥 1. If lead_id is provided → Update by lead_id (BEST)
+    // ---------------------------------------------------------
+    if (lead_id) {
+      result = await pool.query(
+        `
+        UPDATE leads
+        SET status = $1,
+            description = $2,
+            updated_at = NOW()
+        WHERE id = $3 AND provider_id = $4
+        RETURNING *;
+        `,
+        [status, proposal_note, lead_id, providerId]
+      );
+    } else {
+      // ---------------------------------------------------------
+      // 🔥 2. Fallback → Update using work_id + provider_id
+      // ---------------------------------------------------------
+      result = await pool.query(
+        `
+        UPDATE leads
+        SET status = $1,
+            description = $2,
+            updated_at = NOW()
+        WHERE work_id = $3 AND provider_id = $4
+        RETURNING *;
+        `,
+        [status, proposal_note, work_id, providerId]
+      );
+    }
 
     if (result.rowCount === 0) {
       return res.json({ success: false, message: "Lead not found" });
@@ -758,9 +779,8 @@ exports.updateLead = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("Error updating lead:", err);
+    console.error("❌ Error updating lead:", err);
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
-
 
