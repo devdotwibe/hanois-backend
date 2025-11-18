@@ -572,66 +572,96 @@ exports.getAllProviderServices = async (req, res, next) => {
     });
   }
 };
-
 exports.getLeads = async (req, res) => {
   try {
     const providerId = req.user?.id;
 
     if (!providerId) {
-      return res.status(400).json({ success: false, error: "User ID not found" });
+      return res.status(400).json({ success: false, error: "Provider ID not found" });
     }
 
-    // 1️⃣ Fetch work_ids from leads table
-    const leadsQuery = `
-      SELECT work_id 
-      FROM leads 
-      WHERE provider_id = $1
-    `;
-    const { rows: leadRows } = await pool.query(leadsQuery, [providerId]);
-
-    const leadWorkIds = leadRows.map(r => r.work_id);
-
-    if (leadWorkIds.length === 0) {
-      return res.json({ success: true, data: [] });
-    }
-
-    // 2️⃣ Fetch work details for leadWorkIds
+    /*
+    ------------------------------------------------------------------
+    1. GET LEADS FROM work TABLE (provider_id ARRAY CONTAINS providerId)
+    ------------------------------------------------------------------
+    */
     const workQuery = `
       SELECT *
       FROM work
-      WHERE id = ANY($1)
+      WHERE $1 = ANY(provider_id)
       ORDER BY created_at DESC
     `;
-    const { rows: works } = await pool.query(workQuery, [leadWorkIds]);
+    const { rows: workLeads } = await pool.query(workQuery, [providerId]);
 
-    if (!works.length) {
+    /*
+    ----------------------------------------------------------
+    2. GET MANUAL LEADS FROM leads TABLE (work_id + provider)
+    ----------------------------------------------------------
+    */
+    const manualLeadQuery = `
+      SELECT w.*
+      FROM leads l
+      JOIN work w ON w.id = l.work_id
+      WHERE l.provider_id = $1
+      ORDER BY l.created_at DESC
+    `;
+
+    const { rows: manualLeads } = await pool.query(manualLeadQuery, [providerId]);
+
+
+    /*
+    ------------------------------------------------------------------
+    3. MERGE BOTH WORK LISTS (avoid duplicates if same work appears)
+    ------------------------------------------------------------------
+    */
+    const allWorksMap = new Map();
+
+    [...workLeads, ...manualLeads].forEach(w => {
+      allWorksMap.set(w.id, w);
+    });
+
+    const allWorks = Array.from(allWorksMap.values());
+
+
+    if (!allWorks.length) {
       return res.json({ success: true, data: [] });
     }
 
-    // 3️⃣ Fetch unique users
-    const userIds = [...new Set(works.map(w => w.user_id).filter(Boolean))];
+
+    /*
+    -----------------------------------------
+    4. FETCH RELATED USERS + CATEGORIES
+    -----------------------------------------
+    */
+    const userIds = [...new Set(allWorks.map(w => w.user_id).filter(Boolean))];
     const users = await UsersModel.findByIds(userIds);
-   
     const userMap = {};
-    users.forEach(u => {
-      userMap[u.id] = u;
-    });
+    users.forEach(u => (userMap[u.id] = u));
 
-    // 4️⃣ Fetch categories
-    const { rows: categories } = await pool.query("SELECT * FROM categories");
+    const { rows: categories } = await pool.query(`SELECT * FROM categories`);
     const categoryMap = {};
-    categories.forEach(c => {
-      categoryMap[c.id] = c;
-    });
+    categories.forEach(c => (categoryMap[c.id] = c));
 
-    // 5️⃣ Build final response
-    const finalResult = works.map(w => ({
+    /*
+    -----------------------------------------
+    5. BUILD FINAL RESPONSE
+    -----------------------------------------
+    */
+    const result = allWorks.map(w => ({
       ...w,
       user: userMap[w.user_id] || null,
-      category: categoryMap[w.project_type] || null
+      category: categoryMap[w.project_type] || null,
+      lead_source: workLeads.find(x => x.id === w.id)
+        ? "system"
+        : "manual"
     }));
 
-    res.json({ success: true, data: finalResult });
+
+    return res.json({
+      success: true,
+      count: result.length,
+      data: result
+    });
 
   } catch (err) {
     console.error("Error in getLeads:", err);
