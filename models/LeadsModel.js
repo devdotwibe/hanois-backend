@@ -4,25 +4,31 @@ class LeadsModel {
 
   // Create a new lead entry
   static async createLead(data) {
-    const { work_id, provider_id } = data;
+    const { work_id, provider_id, status, description } = data;
 
     const result = await pool.query(
       `
       INSERT INTO leads (
         work_id,
         provider_id,
+        status,
+        description,
         created_at
       )
-      VALUES ($1, $2, NOW())
+      VALUES ($1, $2, $3, $4, NOW())
       RETURNING 
         id,
         work_id,
         provider_id,
+        status,
+        description,
         created_at
       `,
       [
         Number(work_id) || null,
         Number(provider_id) || null,
+        status || "Awaiting Review",
+        description || null
       ]
     );
 
@@ -33,7 +39,13 @@ class LeadsModel {
   static async checkExistingLead(work_id, provider_id) {
     const result = await pool.query(
       `
-      SELECT id, work_id, provider_id, created_at
+      SELECT 
+        id, 
+        work_id, 
+        provider_id, 
+        status,
+        description,
+        created_at
       FROM leads
       WHERE work_id = $1 AND provider_id = $2
       LIMIT 1
@@ -49,13 +61,15 @@ class LeadsModel {
     const result = await pool.query(
       `
       SELECT 
-        l.id,
-        l.work_id,
-        l.provider_id,
-        l.created_at
-      FROM leads l
-      WHERE l.provider_id = $1
-      ORDER BY l.created_at DESC
+        id,
+        work_id,
+        provider_id,
+        status,
+        description,
+        created_at
+      FROM leads
+      WHERE provider_id = $1
+      ORDER BY created_at DESC
       `,
       [Number(provider_id)]
     );
@@ -69,7 +83,13 @@ class LeadsModel {
       `
       DELETE FROM leads
       WHERE id = $1 AND provider_id = $2
-      RETURNING id, work_id, provider_id, created_at
+      RETURNING 
+        id, 
+        work_id, 
+        provider_id, 
+        status,
+        description,
+        created_at
       `,
       [Number(id), Number(provider_id)]
     );
