@@ -41,4 +41,9 @@ router.delete('/:id', authenticateToken, deleteProvider);
 // GET SINGLE PROVIDER (MUST BE LAST)
 router.get('/:id', authenticateToken, getProviderById);
 
+router.get("/lead-work-ids", authenticateToken, getLeadWorkIds);
+
+
+
+
 module.exports = router;
