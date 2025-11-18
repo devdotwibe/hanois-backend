@@ -407,14 +407,60 @@ exports.getMyProjects = async (req, res, next) => {
 
 exports.getPublicProjects = async (req, res, next) => {
   try {
+    // 1. Fetch all PUBLIC projects
     const result = await pool.query(
       "SELECT * FROM work WHERE listing_style = 'public' ORDER BY id DESC"
     );
 
-    res.json(result.rows);
+    const projects = result.rows;
+
+    if (!projects.length) {
+      return res.json({ success: true, data: [] });
+    }
+
+    // 2. Extract ALL unique user_ids
+    const userIds = [
+      ...new Set(projects.map((p) => p.user_id).filter(Boolean))
+    ];
+
+    // 3. Fetch all users in one query
+    const users = await UsersModel.findByIds(userIds);
+
+    // user_id → user mapping
+    const userMap = {};
+    users.forEach(u => {
+      userMap[u.id] = u;
+    });
+
+    // 4. Fetch all categories (for project_type)
+    const { rows: categories } = await pool.query("SELECT * FROM categories");
+    const categoryMap = {};
+    categories.forEach(c => {
+      categoryMap[c.id] = c;
+    });
+
+    // 5. Fetch all services (optional)
+    const { rows: services } = await pool.query("SELECT * FROM services");
+    const serviceMap = {};
+    services.forEach(s => {
+      serviceMap[s.id] = s;
+    });
+
+    // 6. Build final result
+    const finalProjects = projects.map(p => ({
+      ...p,
+      user: userMap[p.user_id] || null,
+      category: categoryMap[p.project_type] || null,
+      service_list: p.service_ids ? p.service_ids.map(id => serviceMap[id]) : []
+    }));
+
+    return res.json({
+      success: true,
+      data: finalProjects
+    });
+
   } catch (err) {
     next(err);
   }
 };
-
 
