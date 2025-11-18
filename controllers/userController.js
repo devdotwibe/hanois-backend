@@ -404,64 +404,75 @@ exports.getMyProjects = async (req, res, next) => {
   }
 };
 
+
 exports.getPublicProjects = async (req, res, next) => {
   try {
-    const providerId = req.user?.id;  // 👈 Logged in provider ID
+    const providerId = req.user?.id || null;
 
-    // Fetch PUBLIC projects but exclude those already in leads
-    let query = `
-      SELECT *
-      FROM work
-      WHERE listing_style = 'public'
-    `;
-
-    let params = [];
-
-    if (providerId) {
-      query += ` AND id NOT IN (
-        SELECT work_id FROM leads WHERE provider_id = $1
-      )`;
-      params.push(providerId);
-    }
-
-    query += ` ORDER BY id DESC`;
-
-    const result = await pool.query(query, params);
-    const projects = result.rows;
+    // 1️⃣ Get all public projects
+    const { rows: projects } = await pool.query(
+      "SELECT * FROM work WHERE listing_style = 'public' ORDER BY id DESC"
+    );
 
     if (!projects.length) {
       return res.json({ success: true, data: [] });
     }
 
-    // Extract user IDs
-    const userIds = [...new Set(projects.map(p => p.user_id).filter(Boolean))];
+    // 2️⃣ If provider logged in → get work_ids from leads table
+    let leadWorkIds = [];
 
-    // Fetch users
+    if (providerId) {
+      const { rows: leadRows } = await pool.query(
+        "SELECT work_id FROM leads WHERE provider_id = $1",
+        [providerId]
+      );
+
+      // flatten to array
+      leadWorkIds = leadRows.map(row => row.work_id);
+    }
+
+    // 3️⃣ Filter projects: remove ones already in leads
+    const filteredProjects = projects.filter(
+      project => !leadWorkIds.includes(project.id)
+    );
+
+    // if no projects left
+    if (!filteredProjects.length) {
+      return res.json({ success: true, data: [] });
+    }
+
+    // 4️⃣ Collect user_ids
+    const userIds = [...new Set(filteredProjects.map(p => p.user_id))];
+
     const users = await UsersModel.findByIds(userIds);
     const userMap = {};
     users.forEach(u => (userMap[u.id] = u));
 
-    // Fetch categories
+    // 5️⃣ Fetch categories
     const { rows: categories } = await pool.query("SELECT * FROM categories");
     const categoryMap = {};
     categories.forEach(c => (categoryMap[c.id] = c));
 
-    // Fetch services
+    // 6️⃣ Fetch services
     const { rows: services } = await pool.query("SELECT * FROM services");
     const serviceMap = {};
     services.forEach(s => (serviceMap[s.id] = s));
 
-    // Build final response
-    const finalProjects = projects.map(p => ({
+    // 7️⃣ Build final response
+    const finalProjects = filteredProjects.map(p => ({
       ...p,
       user: userMap[p.user_id] || null,
       category: categoryMap[p.project_type] || null,
       service_list: p.service_ids ? p.service_ids.map(id => serviceMap[id]) : []
     }));
 
-    res.json({ success: true, data: finalProjects });
+    return res.json({
+      success: true,
+      data: finalProjects
+    });
 
   } catch (err) {
+    console.error("Error in getPublicProjects:", err);
     next(err);
   }
 };
