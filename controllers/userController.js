@@ -404,21 +404,19 @@ exports.getMyProjects = async (req, res, next) => {
   }
 };
 
-
 exports.getPublicProjects = async (req, res, next) => {
   try {
     const providerId = req.user?.id || null;
 
-    // 1️⃣ Get all public projects
+    console.log("👉 providerId from token =", providerId);
+
     const { rows: projects } = await pool.query(
       "SELECT * FROM work WHERE listing_style = 'public' ORDER BY id DESC"
     );
 
-    if (!projects.length) {
-      return res.json({ success: true, data: [] });
-    }
+    console.log("👉 Total public projects:", projects.length);
 
-    // 2️⃣ If provider logged in → get work_ids from leads table
+    // Fetch leads
     let leadWorkIds = [];
 
     if (providerId) {
@@ -427,52 +425,25 @@ exports.getPublicProjects = async (req, res, next) => {
         [providerId]
       );
 
-      // flatten to array
-      leadWorkIds = leadRows.map(row => row.work_id);
+      leadWorkIds = leadRows.map(r => r.work_id);
+
+      console.log("👉 Lead work_ids from DB =", leadWorkIds);
     }
 
-    // 3️⃣ Filter projects: remove ones already in leads
+    // Filter
     const filteredProjects = projects.filter(
       project => !leadWorkIds.includes(project.id)
     );
 
-    // if no projects left
-    if (!filteredProjects.length) {
-      return res.json({ success: true, data: [] });
-    }
-
-    // 4️⃣ Collect user_ids
-    const userIds = [...new Set(filteredProjects.map(p => p.user_id))];
-
-    const users = await UsersModel.findByIds(userIds);
-    const userMap = {};
-    users.forEach(u => (userMap[u.id] = u));
-
-    // 5️⃣ Fetch categories
-    const { rows: categories } = await pool.query("SELECT * FROM categories");
-    const categoryMap = {};
-    categories.forEach(c => (categoryMap[c.id] = c));
-
-    // 6️⃣ Fetch services
-    const { rows: services } = await pool.query("SELECT * FROM services");
-    const serviceMap = {};
-    services.forEach(s => (serviceMap[s.id] = s));
-
-    // 7️⃣ Build final response
-    const finalProjects = filteredProjects.map(p => ({
-      ...p,
-      user: userMap[p.user_id] || null,
-      category: categoryMap[p.project_type] || null,
-      service_list: p.service_ids ? p.service_ids.map(id => serviceMap[id]) : []
-    }));
+    console.log("👉 Remaining projects after filter =", filteredProjects.map(p => p.id));
 
     return res.json({
       success: true,
-      data: finalProjects
+      data: filteredProjects
     });
 
   } catch (err) {
-    console.error("Error in getPublicProjects:", err);
+    console.error("❌ ERROR getPublicProjects:", err);
     next(err);
   }
 };
