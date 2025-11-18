@@ -406,10 +406,9 @@ exports.getMyProjects = async (req, res, next) => {
 
 exports.getPublicProjects = async (req, res, next) => {
   try {
+    const providerId = req.user?.id;  // 👈 Logged in provider ID
 
-    const providerId = req.user?.id;  // 👈 get providerId if logged in
-
-    // 1. Fetch all PUBLIC projects but exclude already added leads
+    // Fetch PUBLIC projects but exclude those already in leads
     let query = `
       SELECT *
       FROM work
@@ -419,7 +418,9 @@ exports.getPublicProjects = async (req, res, next) => {
     let params = [];
 
     if (providerId) {
-      query += ` AND id NOT IN (SELECT work_id FROM leads WHERE provider_id = $1)`;
+      query += ` AND id NOT IN (
+        SELECT work_id FROM leads WHERE provider_id = $1
+      )`;
       params.push(providerId);
     }
 
@@ -432,27 +433,25 @@ exports.getPublicProjects = async (req, res, next) => {
       return res.json({ success: true, data: [] });
     }
 
-    // 2. Extract ALL unique user_ids
-    const userIds = [
-      ...new Set(projects.map((p) => p.user_id).filter(Boolean))
-    ];
+    // Extract user IDs
+    const userIds = [...new Set(projects.map(p => p.user_id).filter(Boolean))];
 
-    // 3. Fetch users
+    // Fetch users
     const users = await UsersModel.findByIds(userIds);
     const userMap = {};
     users.forEach(u => (userMap[u.id] = u));
 
-    // 4. Fetch categories
+    // Fetch categories
     const { rows: categories } = await pool.query("SELECT * FROM categories");
     const categoryMap = {};
     categories.forEach(c => (categoryMap[c.id] = c));
 
-    // 5. Fetch services
+    // Fetch services
     const { rows: services } = await pool.query("SELECT * FROM services");
     const serviceMap = {};
     services.forEach(s => (serviceMap[s.id] = s));
 
-    // 6. Build final result
+    // Build final response
     const finalProjects = projects.map(p => ({
       ...p,
       user: userMap[p.user_id] || null,
@@ -460,13 +459,9 @@ exports.getPublicProjects = async (req, res, next) => {
       service_list: p.service_ids ? p.service_ids.map(id => serviceMap[id]) : []
     }));
 
-    return res.json({
-      success: true,
-      data: finalProjects
-    });
+    res.json({ success: true, data: finalProjects });
 
   } catch (err) {
     next(err);
   }
 };
-
