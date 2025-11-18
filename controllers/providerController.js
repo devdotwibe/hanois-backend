@@ -571,8 +571,7 @@ exports.getAllProviderServices = async (req, res, next) => {
       details: err.message,
     });
   }
-};
-exports.getLeads = async (req, res) => {
+};exports.getLeads = async (req, res) => {
   try {
     const providerId = req.user?.id;
 
@@ -580,11 +579,7 @@ exports.getLeads = async (req, res) => {
       return res.status(400).json({ success: false, error: "Provider ID not found" });
     }
 
-    /*
-    ------------------------------------------------------------------
-    1. GET LEADS FROM work TABLE (provider_id ARRAY CONTAINS providerId)
-    ------------------------------------------------------------------
-    */
+    // 1. Fetch system leads
     const workQuery = `
       SELECT *
       FROM work
@@ -593,11 +588,7 @@ exports.getLeads = async (req, res) => {
     `;
     const { rows: workLeads } = await pool.query(workQuery, [providerId]);
 
-    /*
-    ----------------------------------------------------------
-    2. GET MANUAL LEADS FROM leads TABLE (work_id + provider)
-    ----------------------------------------------------------
-    */
+    // 2. Fetch manual leads
     const manualLeadQuery = `
       SELECT w.*
       FROM leads l
@@ -605,34 +596,21 @@ exports.getLeads = async (req, res) => {
       WHERE l.provider_id = $1
       ORDER BY l.created_at DESC
     `;
-
     const { rows: manualLeads } = await pool.query(manualLeadQuery, [providerId]);
 
-
-    /*
-    ------------------------------------------------------------------
-    3. MERGE BOTH WORK LISTS (avoid duplicates if same work appears)
-    ------------------------------------------------------------------
-    */
+    // 3. Merge & remove duplicates
     const allWorksMap = new Map();
-
-    [...workLeads, ...manualLeads].forEach(w => {
-      allWorksMap.set(w.id, w);
-    });
-
-    const allWorks = Array.from(allWorksMap.values());
-
+    [...workLeads, ...manualLeads].forEach(w => allWorksMap.set(w.id, w));
+    let allWorks = Array.from(allWorksMap.values());
 
     if (!allWorks.length) {
       return res.json({ success: true, data: [] });
     }
 
+    // 🔥 Sort by latest
+    allWorks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    /*
-    -----------------------------------------
-    4. FETCH RELATED USERS + CATEGORIES
-    -----------------------------------------
-    */
+    // 4. Fetch related user + category
     const userIds = [...new Set(allWorks.map(w => w.user_id).filter(Boolean))];
     const users = await UsersModel.findByIds(userIds);
     const userMap = {};
@@ -642,11 +620,7 @@ exports.getLeads = async (req, res) => {
     const categoryMap = {};
     categories.forEach(c => (categoryMap[c.id] = c));
 
-    /*
-    -----------------------------------------
-    5. BUILD FINAL RESPONSE
-    -----------------------------------------
-    */
+    // 5. Build final result
     const result = allWorks.map(w => ({
       ...w,
       user: userMap[w.user_id] || null,
@@ -655,7 +629,6 @@ exports.getLeads = async (req, res) => {
         ? "system"
         : "manual"
     }));
-
 
     return res.json({
       success: true,
@@ -668,6 +641,7 @@ exports.getLeads = async (req, res) => {
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
+
 
 exports.addLead = async (req, res) => {
   try {
