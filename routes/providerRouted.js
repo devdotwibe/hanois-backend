@@ -12,37 +12,33 @@ const {
   getAllProviderServices,
   getProvidersByCategory,
   getLeads,
-   addLead 
+  addLead 
 } = require('../controllers/providerController');
 
 const { providerValidation } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
 
+// AUTH + REGISTER
 router.post('/register', providerValidation, registerProvider);
 router.post('/reset-password', resetPassword);
 
-router.get('/all-provider-services', getAllProviderServices);
-
+// PUBLIC LISTINGS
 router.get('/', getProviders);
-router.put('/update-profile/:providerId', authenticateToken, updateProviderProfile);
+router.get('/all-provider-services', getAllProviderServices);
+router.get('/by-category/:categoryId', getProvidersByCategory);
 
-router.delete('/:id', authenticateToken, deleteProvider);
-router.put('/:id', authenticateToken, updateProvider);
-
+// LEADS (IMPORTANT: must be BEFORE :id)
 router.get("/get_leads", authenticateToken, getLeads);
-
-router.get('/:id', authenticateToken, getProviderById);
-
-router.get("/by-category/:categoryId", getProvidersByCategory);
-
-
-
-router.get("/get_leads", authenticateToken, getLeads);
-
-// ⭐ NEW: ADD TO LEADS
 router.post("/add-lead", authenticateToken, addLead);
 
-router.get('/:id', authenticateToken, getProviderById);
+// PROFILE UPDATE
+router.put('/update-profile/:providerId', authenticateToken, updateProviderProfile);
 
+// CRUD (PUT + DELETE)
+router.put('/:id', authenticateToken, updateProvider);
+router.delete('/:id', authenticateToken, deleteProvider);
+
+// GET SINGLE PROVIDER (MUST BE LAST)
+router.get('/:id', authenticateToken, getProviderById);
 
 module.exports = router;
