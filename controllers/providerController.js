@@ -10,6 +10,11 @@ const pool = require("../db/pool");
 const JWT_SECRET = "a3f9b0e1a8c2d34e5f67b89a0c1d2e3f4a5b6c7d8e9f00112233445566778899";
 const UsersModel = require('../models/usersModel');
 
+const LeadsModel = require('../models/leadsModel');
+
+
+
+
   exports.resetPassword = async (req, res, next) => {
     try {
       const { token, password } = req.body;
@@ -612,6 +617,46 @@ exports.getLeads = async (req, res) => {
     res.json({ success: true, data: result });
   } catch (err) {
     console.error("Error in getLeads:", err);
+    res.status(500).json({ success: false, error: "Internal server error" });
+  }
+};
+
+
+exports.addLead = async (req, res) => {
+  try {
+    const providerId = req.user?.id;
+    const { work_id } = req.body;
+
+    if (!providerId) {
+      return res.status(400).json({ success: false, error: "Provider ID missing" });
+    }
+
+    if (!work_id) {
+      return res.status(400).json({ success: false, error: "work_id is required" });
+    }
+
+    // Check if lead already exists
+    const existing = await LeadsModel.find(providerId, work_id);
+
+    if (existing) {
+      return res.json({
+        success: true,
+        message: "Already added to leads",
+        lead: existing
+      });
+    }
+
+    // Insert
+    const lead = await LeadsModel.addLead(providerId, work_id);
+
+    return res.json({
+      success: true,
+      message: "Added to leads successfully",
+      lead
+    });
+
+  } catch (err) {
+    console.error("Error adding lead:", err);
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 };

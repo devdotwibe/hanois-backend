@@ -11,7 +11,8 @@ const {
   updateProviderProfile,
   getAllProviderServices,
   getProvidersByCategory,
-  getLeads
+  getLeads,
+   addLead 
 } = require('../controllers/providerController');
 
 const { providerValidation } = require('../middleware/validation');
@@ -33,6 +34,15 @@ router.get("/get_leads", authenticateToken, getLeads);
 router.get('/:id', authenticateToken, getProviderById);
 
 router.get("/by-category/:categoryId", getProvidersByCategory);
+
+
+
+router.get("/get_leads", authenticateToken, getLeads);
+
+// ⭐ NEW: ADD TO LEADS
+router.post("/add-lead", authenticateToken, addLead);
+
+router.get('/:id', authenticateToken, getProviderById);
 
 
 module.exports = router;
