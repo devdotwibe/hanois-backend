@@ -571,7 +571,12 @@ exports.getAllProviderServices = async (req, res, next) => {
       details: err.message,
     });
   }
-};exports.getLeads = async (req, res) => {
+};
+
+
+
+
+exports.getLeads = async (req, res) => {
   try {
     const providerId = req.user?.id;
 
@@ -579,22 +584,20 @@ exports.getAllProviderServices = async (req, res, next) => {
       return res.status(400).json({ success: false, error: "Provider ID not found" });
     }
 
-    // 1. Fetch system leads
+    // 1. Fetch system leads (work table)
     const workQuery = `
       SELECT *
       FROM work
       WHERE $1 = ANY(provider_id)
-      ORDER BY created_at DESC
     `;
     const { rows: workLeads } = await pool.query(workQuery, [providerId]);
 
-    // 2. Fetch manual leads
+    // 2. Fetch manual leads (leads table)
     const manualLeadQuery = `
       SELECT w.*
       FROM leads l
       JOIN work w ON w.id = l.work_id
       WHERE l.provider_id = $1
-      ORDER BY l.created_at DESC
     `;
     const { rows: manualLeads } = await pool.query(manualLeadQuery, [providerId]);
 
@@ -607,28 +610,49 @@ exports.getAllProviderServices = async (req, res, next) => {
       return res.json({ success: true, data: [] });
     }
 
-    // 🔥 Sort by latest
-    allWorks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-    // 4. Fetch related user + category
+    // 4. Fetch related user info
     const userIds = [...new Set(allWorks.map(w => w.user_id).filter(Boolean))];
     const users = await UsersModel.findByIds(userIds);
     const userMap = {};
     users.forEach(u => (userMap[u.id] = u));
 
+    // 5. Fetch categories
     const { rows: categories } = await pool.query(`SELECT * FROM categories`);
     const categoryMap = {};
     categories.forEach(c => (categoryMap[c.id] = c));
 
-    // 5. Build final result
-    const result = allWorks.map(w => ({
+    // 6. Build final result with lead_source + is_public
+    let result = allWorks.map(w => ({
       ...w,
       user: userMap[w.user_id] || null,
       category: categoryMap[w.project_type] || null,
+      is_public: w.listing_style === "public",
       lead_source: workLeads.find(x => x.id === w.id)
         ? "system"
         : "manual"
     }));
+
+    /*
+      ----------------------------------------------------
+      SORT ORDER:
+      1. PUBLIC projects first
+      2. Manual leads next
+      3. System leads last
+      4. Inside each group → latest created_at first
+      ----------------------------------------------------
+    */
+    result.sort((a, b) => {
+      // Public first
+      if (a.is_public && !b.is_public) return -1;
+      if (!a.is_public && b.is_public) return 1;
+
+      // Manual before System
+      if (a.lead_source === "manual" && b.lead_source === "system") return -1;
+      if (a.lead_source === "system" && b.lead_source === "manual") return 1;
+
+      // Latest first
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
 
     return res.json({
       success: true,
