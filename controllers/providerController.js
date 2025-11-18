@@ -720,11 +720,10 @@ exports.getLeadWorkIds = async (req, res) => {
   }
 };
 
-
 exports.updateLead = async (req, res) => {
   try {
     const providerId = req.user?.id;
-    const { lead_id, work_id, status, proposal_note } = req.body;
+    const { lead_id, work_id, status, description } = req.body;
 
     if (!providerId) {
       return res.status(400).json({ success: false, error: "Provider ID not found" });
@@ -736,9 +735,7 @@ exports.updateLead = async (req, res) => {
 
     let result;
 
-    // ---------------------------------------------------------
-    // 🔥 1. If lead_id is provided → Update by lead_id (BEST)
-    // ---------------------------------------------------------
+    // Update by lead_id
     if (lead_id) {
       result = await pool.query(
         `
@@ -749,12 +746,11 @@ exports.updateLead = async (req, res) => {
         WHERE id = $3 AND provider_id = $4
         RETURNING *;
         `,
-        [status, proposal_note, lead_id, providerId]
+        [status, description, lead_id, providerId]
       );
-    } else {
-      // ---------------------------------------------------------
-      // 🔥 2. Fallback → Update using work_id + provider_id
-      // ---------------------------------------------------------
+    } 
+    // Update by (work_id + provider_id)
+    else {
       result = await pool.query(
         `
         UPDATE leads
@@ -764,7 +760,7 @@ exports.updateLead = async (req, res) => {
         WHERE work_id = $3 AND provider_id = $4
         RETURNING *;
         `,
-        [status, proposal_note, work_id, providerId]
+        [status, description, work_id, providerId]
       );
     }
 
