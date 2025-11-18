@@ -592,12 +592,16 @@ exports.getLeads = async (req, res) => {
 
     // 2. Manual leads (include lead_created_at!)
     const manualLeadQuery = `
-      SELECT 
-        w.*, 
-        l.created_at AS lead_created_at
-      FROM leads l
-      JOIN work w ON w.id = l.work_id
-      WHERE l.provider_id = $1
+     SELECT 
+  w.*, 
+  l.id AS lead_id,
+  l.status AS lead_status,
+  l.description AS lead_description,
+  l.created_at AS lead_created_at
+FROM leads l
+JOIN work w ON w.id = l.work_id
+WHERE l.provider_id = $1
+
     `;
     const { rows: manualLeads } = await pool.query(manualLeadQuery, [providerId]);
 
@@ -628,12 +632,22 @@ exports.getLeads = async (req, res) => {
     categories.forEach(c => (categoryMap[c.id] = c));
 
     // 6. Build final API response
-    const result = allWorks.map(w => ({
-      ...w,
-      user: userMap[w.user_id] || null,
-      category: categoryMap[w.project_type] || null,
-      lead_source: manualLeads.find(m => m.id === w.id) ? "manual" : "system"
-    }));
+   const result = allWorks.map(w => ({
+  ...w,
+
+  user: userMap[w.user_id] || null,
+  category: categoryMap[w.project_type] || null,
+
+  // Lead table fields (manual updates)
+  lead_id: w.lead_id || null,
+  status: w.lead_status || w.status || "Awaiting Review",
+  proposal_note: w.lead_description || "",
+
+  lead_created_at: w.lead_created_at || null,
+
+  lead_source: manualLeads.find(m => m.id === w.id) ? "manual" : "system"
+}));
+
 
     return res.json({ success: true, data: result });
 
