@@ -640,8 +640,10 @@ WHERE l.provider_id = $1
 
   // Lead table fields (manual updates)
   lead_id: w.lead_id || null,
-  status: w.lead_status || w.status || "Awaiting Review",
-  proposal_note: w.lead_description || "",
+ status: w.lead_status ?? "Awaiting Review",
+
+ proposal_note: w.lead_description ?? "",
+
 
   lead_created_at: w.lead_created_at || null,
 
