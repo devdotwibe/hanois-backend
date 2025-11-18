@@ -721,11 +721,18 @@ exports.getLeadWorkIds = async (req, res) => {
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
-
 exports.updateLead = async (req, res) => {
   try {
     const providerId = req.user?.id;
     const { lead_id, work_id, status, description } = req.body;
+
+    console.log("📥 Incoming Update Payload:", {
+      providerId,
+      lead_id,
+      work_id,
+      status,
+      description
+    });
 
     if (!providerId) {
       return res.status(400).json({ success: false, error: "Provider ID not found" });
@@ -777,8 +784,21 @@ exports.updateLead = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("❌ Error updating lead:", err);
-    res.status(500).json({ success: false, error: "Internal server error" });
+    console.error("❌ ERROR updating lead:");
+    console.error("Message:", err.message);
+    console.error("Detail:", err.detail);
+    console.error("Hint:", err.hint);
+    console.error("Position:", err.position);
+    console.error("Where:", err.where);
+    console.error("Code:", err.code);
+    console.error("SQL State:", err.sqlState);
+    console.error("Stack:", err.stack);
+
+    return res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      message: err.message,
+      detail: err.detail
+    });
   }
 };
-
