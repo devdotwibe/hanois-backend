@@ -720,8 +720,7 @@ exports.getLeadWorkIds = async (req, res) => {
     console.error("Error fetching lead work IDs:", err);
     res.status(500).json({ success: false, error: "Internal server error" });
   }
-};
-exports.updateLead = async (req, res) => {
+};exports.updateLead = async (req, res) => {
   try {
     const providerId = req.user?.id;
     const { lead_id, work_id, status, description } = req.body;
@@ -744,28 +743,26 @@ exports.updateLead = async (req, res) => {
 
     let result;
 
-    // Update by lead_id
+    // ✅ Update by lead_id
     if (lead_id) {
       result = await pool.query(
         `
         UPDATE leads
         SET status = $1,
-            description = $2,
-            updated_at = NOW()
+            description = $2
         WHERE id = $3 AND provider_id = $4
         RETURNING *;
         `,
         [status, description, lead_id, providerId]
       );
     } 
-    // Update by (work_id + provider_id)
+    // ✅ Update by work_id
     else {
       result = await pool.query(
         `
         UPDATE leads
         SET status = $1,
-            description = $2,
-            updated_at = NOW()
+            description = $2
         WHERE work_id = $3 AND provider_id = $4
         RETURNING *;
         `,
