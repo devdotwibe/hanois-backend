@@ -705,3 +705,48 @@ exports.getLeadWorkIds = async (req, res) => {
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
+
+
+exports.updateLead = async (req, res) => {
+  try {
+    const providerId = req.user?.id;
+    const { work_id, status, description } = req.body;
+
+    if (!providerId) {
+      return res.status(400).json({ success: false, error: "Provider ID not found" });
+    }
+
+    if (!work_id) {
+      return res.status(400).json({ success: false, error: "work_id is required" });
+    }
+
+    // update leads table
+    const result = await pool.query(
+      `
+      UPDATE leads
+      SET status = $1,
+          description = $2,
+          updated_at = NOW()
+      WHERE work_id = $3 AND provider_id = $4
+      RETURNING *;
+      `,
+      [status, description, work_id, providerId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.json({ success: false, message: "Lead not found" });
+    }
+
+    return res.json({
+      success: true,
+      message: "Lead updated successfully",
+      data: result.rows[0],
+    });
+
+  } catch (err) {
+    console.error("Error updating lead:", err);
+    res.status(500).json({ success: false, error: "Internal server error" });
+  }
+};
+
+

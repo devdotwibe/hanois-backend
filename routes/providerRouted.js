@@ -13,6 +13,7 @@ const {
   getProvidersByCategory,
   getLeads,
   addLead,
+  updateLead,
   getLeadWorkIds  // ✅ import
 } = require('../controllers/providerController');
 
@@ -31,6 +32,11 @@ router.get('/by-category/:categoryId', getProvidersByCategory);
 // LEAD APIs – MUST BE BEFORE :id
 router.get("/get_leads", authenticateToken, getLeads);
 router.post("/add-lead", authenticateToken, addLead);
+
+router.post("/update-lead", authenticateToken, updateLead);
+
+
+
 router.get("/lead-work-ids", authenticateToken, getLeadWorkIds); // ✅ move HERE
 
 // PROFILE
