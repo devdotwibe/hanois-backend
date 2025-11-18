@@ -572,90 +572,86 @@ exports.getAllProviderServices = async (req, res, next) => {
     });
   }
 };
-
 exports.getLeads = async (req, res) => {
   try {
     const providerId = req.user?.id;
 
     if (!providerId) {
-      return res.status(400).json({ success: false, error: "Provider ID not found" });
+      return res.status(400).json({
+        success: false,
+        error: "Provider ID not found"
+      });
     }
 
-    // 1. System leads
+    // 1️⃣ Fetch system leads (from work table)
     const workQuery = `
-      SELECT *,
-      created_at AS system_created_at
+      SELECT *
       FROM work
       WHERE $1 = ANY(provider_id)
+      ORDER BY created_at DESC
     `;
-    const { rows: workLeads } = await pool.query(workQuery, [providerId]);
+    const { rows: works } = await pool.query(workQuery, [providerId]);
 
-    // 2. Manual leads (include lead_created_at!)
-    const manualLeadQuery = `
-     SELECT 
-  w.*, 
-  l.id AS lead_id,
-  l.status AS lead_status,
-  l.description AS lead_description,
-  l.created_at AS lead_created_at
-FROM leads l
-JOIN work w ON w.id = l.work_id
-WHERE l.provider_id = $1
-
-    `;
-    const { rows: manualLeads } = await pool.query(manualLeadQuery, [providerId]);
-
-    // 3. Merge & dedupe
-    const map = new Map();
-    [...workLeads, ...manualLeads].forEach(item => map.set(item.id, item));
-    let allWorks = Array.from(map.values());
-
-    if (!allWorks.length) {
+    if (!works.length) {
       return res.json({ success: true, data: [] });
     }
 
-    // 4. Sorting logic
-    allWorks.sort((a, b) => {
-      const aTime = a.lead_created_at || a.system_created_at || a.created_at;
-      const bTime = b.lead_created_at || b.system_created_at || b.created_at;
-      return new Date(bTime) - new Date(aTime);
-    });
+    const workIds = works.map(w => w.id);
 
-    // 5. User + Category mapping
-    const userIds = [...new Set(allWorks.map(w => w.user_id).filter(Boolean))];
+    // 2️⃣ Fetch manual leads for these work items (from leads table)
+    const manualQuery = `
+      SELECT *
+      FROM leads
+      WHERE provider_id = $1
+        AND work_id = ANY($2)
+    `;
+    const { rows: manualLeads } = await pool.query(manualQuery, [
+      providerId,
+      workIds,
+    ]);
+
+    const leadMap = {};
+    manualLeads.forEach(l => (leadMap[l.work_id] = l));
+
+    // 3️⃣ Fetch users
+    const userIds = [...new Set(works.map(w => w.user_id).filter(Boolean))];
     const users = await UsersModel.findByIds(userIds);
+
     const userMap = {};
     users.forEach(u => (userMap[u.id] = u));
 
+    // 4️⃣ Fetch categories
     const { rows: categories } = await pool.query(`SELECT * FROM categories`);
     const categoryMap = {};
     categories.forEach(c => (categoryMap[c.id] = c));
 
-    // 6. Build final API response
-   const result = allWorks.map(w => ({
-  ...w,
+    // 5️⃣ Build final response
+    const result = works.map(w => {
+      const lead = leadMap[w.id]; // matching manual lead if exists
 
-  user: userMap[w.user_id] || null,
-  category: categoryMap[w.project_type] || null,
+      return {
+        ...w,
+        user: userMap[w.user_id] || null,
+        category: categoryMap[w.project_type] || null,
 
-  // Lead table fields (manual updates)
-  lead_id: w.lead_id || null,
- status: w.lead_status ?? "Awaiting Review",
+        // manual lead fields (DO NOT OVERRIDE work table)
+        lead_id: lead?.id || null,
+        lead_status: lead?.status || null,
+        lead_description: lead?.description || null,
+        lead_created_at: lead?.created_at || null,
 
- proposal_note: w.lead_description ?? "",
-
-
-  lead_created_at: w.lead_created_at || null,
-
-  lead_source: manualLeads.find(m => m.id === w.id) ? "manual" : "system"
-}));
-
+        lead_source: lead ? "manual" : "system"
+      };
+    });
 
     return res.json({ success: true, data: result });
 
   } catch (err) {
     console.error("Error in getLeads:", err);
-    return res.status(500).json({ success: false, error: "Internal server error" });
+    return res.status(500).json({
+      success: false,
+      error: "Internal server error"
+    });
   }
 };
 
