@@ -581,40 +581,58 @@ exports.getLeads = async (req, res) => {
       return res.status(400).json({ success: false, error: "User ID not found" });
     }
 
+    // 1️⃣ Fetch work_ids from leads table
+    const leadsQuery = `
+      SELECT work_id 
+      FROM leads 
+      WHERE provider_id = $1
+    `;
+    const { rows: leadRows } = await pool.query(leadsQuery, [providerId]);
+
+    const leadWorkIds = leadRows.map(r => r.work_id);
+
+    if (leadWorkIds.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
+    // 2️⃣ Fetch work details for leadWorkIds
     const workQuery = `
       SELECT *
       FROM work
-      WHERE $1 = ANY(provider_id)
+      WHERE id = ANY($1)
       ORDER BY created_at DESC
     `;
-
-    const { rows: works } = await pool.query(workQuery, [providerId]);
+    const { rows: works } = await pool.query(workQuery, [leadWorkIds]);
 
     if (!works.length) {
       return res.json({ success: true, data: [] });
     }
 
+    // 3️⃣ Fetch unique users
     const userIds = [...new Set(works.map(w => w.user_id).filter(Boolean))];
-
-    const users = await UsersModel.findByIds(userIds); 
-
+    const users = await UsersModel.findByIds(userIds);
+   
     const userMap = {};
-    for (const u of users) {
+    users.forEach(u => {
       userMap[u.id] = u;
-    }
+    });
 
-    const categoryQuery = `SELECT * FROM categories`;
-    const { rows: categories } = await pool.query(categoryQuery);
+    // 4️⃣ Fetch categories
+    const { rows: categories } = await pool.query("SELECT * FROM categories");
     const categoryMap = {};
-    for (const c of categories) categoryMap[c.id] = c;
+    categories.forEach(c => {
+      categoryMap[c.id] = c;
+    });
 
-    const result = works.map(w => ({
+    // 5️⃣ Build final response
+    const finalResult = works.map(w => ({
       ...w,
       user: userMap[w.user_id] || null,
-      category: categoryMap[w.project_type] || null,
+      category: categoryMap[w.project_type] || null
     }));
 
-    res.json({ success: true, data: result });
+    res.json({ success: true, data: finalResult });
+
   } catch (err) {
     console.error("Error in getLeads:", err);
     res.status(500).json({ success: false, error: "Internal server error" });
