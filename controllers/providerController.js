@@ -571,7 +571,9 @@ exports.getAllProviderServices = async (req, res, next) => {
       details: err.message,
     });
   }
-};exports.getLeads = async (req, res) => {
+};
+
+exports.getLeads = async (req, res) => {
   try {
     const providerId = req.user?.id;
 
@@ -579,38 +581,43 @@ exports.getAllProviderServices = async (req, res, next) => {
       return res.status(400).json({ success: false, error: "Provider ID not found" });
     }
 
-    // 1. Fetch system leads
+    // 1. System leads
     const workQuery = `
-      SELECT *
+      SELECT *,
+      created_at AS system_created_at
       FROM work
       WHERE $1 = ANY(provider_id)
-      ORDER BY created_at DESC
     `;
     const { rows: workLeads } = await pool.query(workQuery, [providerId]);
 
-    // 2. Fetch manual leads
+    // 2. Manual leads (include lead_created_at!)
     const manualLeadQuery = `
-      SELECT w.*
+      SELECT 
+        w.*, 
+        l.created_at AS lead_created_at
       FROM leads l
       JOIN work w ON w.id = l.work_id
       WHERE l.provider_id = $1
-      ORDER BY l.created_at DESC
     `;
     const { rows: manualLeads } = await pool.query(manualLeadQuery, [providerId]);
 
-    // 3. Merge & remove duplicates
-    const allWorksMap = new Map();
-    [...workLeads, ...manualLeads].forEach(w => allWorksMap.set(w.id, w));
-    let allWorks = Array.from(allWorksMap.values());
+    // 3. Merge & dedupe
+    const map = new Map();
+    [...workLeads, ...manualLeads].forEach(item => map.set(item.id, item));
+    let allWorks = Array.from(map.values());
 
     if (!allWorks.length) {
       return res.json({ success: true, data: [] });
     }
 
-    // 🔥 Sort by latest
-    allWorks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    // 4. Sorting logic
+    allWorks.sort((a, b) => {
+      const aTime = a.lead_created_at || a.system_created_at || a.created_at;
+      const bTime = b.lead_created_at || b.system_created_at || b.created_at;
+      return new Date(bTime) - new Date(aTime);
+    });
 
-    // 4. Fetch related user + category
+    // 5. User + Category mapping
     const userIds = [...new Set(allWorks.map(w => w.user_id).filter(Boolean))];
     const users = await UsersModel.findByIds(userIds);
     const userMap = {};
@@ -620,28 +627,21 @@ exports.getAllProviderServices = async (req, res, next) => {
     const categoryMap = {};
     categories.forEach(c => (categoryMap[c.id] = c));
 
-    // 5. Build final result
+    // 6. Build final API response
     const result = allWorks.map(w => ({
       ...w,
       user: userMap[w.user_id] || null,
       category: categoryMap[w.project_type] || null,
-      lead_source: workLeads.find(x => x.id === w.id)
-        ? "system"
-        : "manual"
+      lead_source: manualLeads.find(m => m.id === w.id) ? "manual" : "system"
     }));
 
-    return res.json({
-      success: true,
-      count: result.length,
-      data: result
-    });
+    return res.json({ success: true, data: result });
 
   } catch (err) {
     console.error("Error in getLeads:", err);
-    res.status(500).json({ success: false, error: "Internal server error" });
+    return res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
-
 
 exports.addLead = async (req, res) => {
   try {
