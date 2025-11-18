@@ -404,14 +404,28 @@ exports.getMyProjects = async (req, res, next) => {
   }
 };
 
-
 exports.getPublicProjects = async (req, res, next) => {
   try {
-    // 1. Fetch all PUBLIC projects
-    const result = await pool.query(
-      "SELECT * FROM work WHERE listing_style = 'public' ORDER BY id DESC"
-    );
 
+    const providerId = req.user?.id;  // 👈 get providerId if logged in
+
+    // 1. Fetch all PUBLIC projects but exclude already added leads
+    let query = `
+      SELECT *
+      FROM work
+      WHERE listing_style = 'public'
+    `;
+
+    let params = [];
+
+    if (providerId) {
+      query += ` AND id NOT IN (SELECT work_id FROM leads WHERE provider_id = $1)`;
+      params.push(providerId);
+    }
+
+    query += ` ORDER BY id DESC`;
+
+    const result = await pool.query(query, params);
     const projects = result.rows;
 
     if (!projects.length) {
@@ -423,28 +437,20 @@ exports.getPublicProjects = async (req, res, next) => {
       ...new Set(projects.map((p) => p.user_id).filter(Boolean))
     ];
 
-    // 3. Fetch all users in one query
+    // 3. Fetch users
     const users = await UsersModel.findByIds(userIds);
-
-    // user_id → user mapping
     const userMap = {};
-    users.forEach(u => {
-      userMap[u.id] = u;
-    });
+    users.forEach(u => (userMap[u.id] = u));
 
-    // 4. Fetch all categories (for project_type)
+    // 4. Fetch categories
     const { rows: categories } = await pool.query("SELECT * FROM categories");
     const categoryMap = {};
-    categories.forEach(c => {
-      categoryMap[c.id] = c;
-    });
+    categories.forEach(c => (categoryMap[c.id] = c));
 
-    // 5. Fetch all services (optional)
+    // 5. Fetch services
     const { rows: services } = await pool.query("SELECT * FROM services");
     const serviceMap = {};
-    services.forEach(s => {
-      serviceMap[s.id] = s;
-    });
+    services.forEach(s => (serviceMap[s.id] = s));
 
     // 6. Build final result
     const finalProjects = projects.map(p => ({
