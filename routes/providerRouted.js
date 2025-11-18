@@ -12,8 +12,7 @@ const {
   getAllProviderServices,
   getProvidersByCategory,
   getLeads,
-  addLead,
-  getLeadWorkIds  // ✅ import
+  addLead 
 } = require('../controllers/providerController');
 
 const { providerValidation } = require('../middleware/validation');
@@ -28,19 +27,20 @@ router.get('/', getProviders);
 router.get('/all-provider-services', getAllProviderServices);
 router.get('/by-category/:categoryId', getProvidersByCategory);
 
-// LEAD APIs – MUST BE BEFORE :id
+// LEADS (IMPORTANT: must be BEFORE :id)
 router.get("/get_leads", authenticateToken, getLeads);
 router.post("/add-lead", authenticateToken, addLead);
-router.get("/lead-work-ids", authenticateToken, getLeadWorkIds); // ✅ move HERE
 
-// PROFILE
+// PROFILE UPDATE
 router.put('/update-profile/:providerId', authenticateToken, updateProviderProfile);
 
-// CRUD
+// CRUD (PUT + DELETE)
 router.put('/:id', authenticateToken, updateProvider);
 router.delete('/:id', authenticateToken, deleteProvider);
 
-// GET SINGLE PROVIDER – MUST ALWAYS BE LAST
+// GET SINGLE PROVIDER (MUST BE LAST)
 router.get('/:id', authenticateToken, getProviderById);
+
+
 
 module.exports = router;
