@@ -35,9 +35,17 @@ const UsersModel = require('../models/usersModel');
         providerId = decoded.id;
       }
 
-      if (!providerId) {
-        return errorResponse(res, "Invalid provider token", 400);
+      let userId = null;
+      if (decoded.role === "user") {
+        userId = decoded.id;
       }
+
+
+
+      if (!providerId && !userId) {
+        return errorResponse(res, "Invalid token", 400);
+      }
+
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -46,6 +54,13 @@ const UsersModel = require('../models/usersModel');
         "UPDATE providers SET password = $1 WHERE id = $2",
         [hashedPassword, providerId]
       );
+      
+      if (userId) {
+        await pool.query(
+          "UPDATE users SET password = $1 WHERE id = $2",
+          [hashedPassword, userId]
+        );
+      }
 
       return successResponse(res, {}, "Password reset successful");
     } catch (err) {
