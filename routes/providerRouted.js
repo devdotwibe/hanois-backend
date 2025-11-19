@@ -14,39 +14,55 @@ const {
   getLeads,
   addLead,
   updateLead,
-  getLeadWorkIds  // ✅ import
+  getLeadWorkIds,
+
+  // ===== PROPOSALS =====
+  createProposal,
+  getProviderProposals,
+  getUserProposals
+
 } = require('../controllers/providerController');
 
 const { providerValidation } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
 
-// AUTH + REGISTER
+
+// =================== AUTH + REGISTER ===================
 router.post('/register', providerValidation, registerProvider);
 router.post('/reset-password', resetPassword);
 
-// PUBLIC LISTINGS
+
+// =================== PUBLIC LISTINGS ===================
 router.get('/', getProviders);
 router.get('/all-provider-services', getAllProviderServices);
 router.get('/by-category/:categoryId', getProvidersByCategory);
 
-// LEAD APIs – MUST BE BEFORE :id
+
+// =================== LEADS ===================
+// MUST be before any "/:id"
 router.get("/get_leads", authenticateToken, getLeads);
 router.post("/add-lead", authenticateToken, addLead);
-
 router.post("/update-lead", authenticateToken, updateLead);
+router.get("/lead-work-ids", authenticateToken, getLeadWorkIds);
 
 
+// =================== PROPOSALS ===================
+// MUST be before "/:id"
+router.post("/send-proposal", authenticateToken, createProposal);
+router.get("/my-proposals", authenticateToken, getProviderProposals);
+router.get("/user-proposals", authenticateToken, getUserProposals);
 
-router.get("/lead-work-ids", authenticateToken, getLeadWorkIds); // ✅ move HERE
 
-// PROFILE
+// =================== PROFILE ===================
 router.put('/update-profile/:providerId', authenticateToken, updateProviderProfile);
 
-// CRUD
+
+// =================== CRUD ===================
 router.put('/:id', authenticateToken, updateProvider);
 router.delete('/:id', authenticateToken, deleteProvider);
 
-// GET SINGLE PROVIDER – MUST ALWAYS BE LAST
+
+// =================== SINGLE PROVIDER (MUST BE LAST) ===================
 router.get('/:id', authenticateToken, getProviderById);
 
 module.exports = router;

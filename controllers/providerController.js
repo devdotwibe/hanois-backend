@@ -12,6 +12,7 @@ const UsersModel = require('../models/usersModel');
 
 const LeadsModel = require('../models/LeadsModel');
 
+const ProposalsModel = require("../models/proposalsModel");
 
 
 
@@ -811,3 +812,51 @@ exports.getLeadWorkIds = async (req, res) => {
     });
   }
 };
+
+
+exports.createProposal = async (req, res, next) => {
+  try {
+    const provider_id = req.user?.id; // provider logged in
+    const {
+      user_id,
+      work_id,
+      title,
+      budget,
+      timeline,
+      description,
+      attachment
+    } = req.body;
+
+    if (!provider_id || !user_id || !work_id) {
+      return errorResponse(res, "Missing required fields", 400);
+    }
+
+    // Check if provider already sent proposal for this work
+    const exists = await ProposalsModel.checkExisting(provider_id, work_id);
+    if (exists) {
+      return errorResponse(
+        res,
+        "Proposal already submitted for this project",
+        409
+      );
+    }
+
+    const newProposal = await ProposalsModel.createProposal({
+      user_id,
+      provider_id,
+      work_id,
+      title,
+      budget,
+      timeline,
+      description,
+      attachment
+    });
+
+    return successResponse(res, newProposal, "Proposal sent successfully");
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+
