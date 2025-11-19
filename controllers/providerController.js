@@ -572,6 +572,7 @@ exports.getAllProviderServices = async (req, res, next) => {
     });
   }
 };
+
 exports.getLeads = async (req, res) => {
   try {
     const providerId = req.user?.id;
@@ -580,80 +581,72 @@ exports.getLeads = async (req, res) => {
       return res.status(400).json({ success: false, error: "Provider ID not found" });
     }
 
-    // 1. System leads
-    const workQuery = `
-      SELECT *,
-      created_at AS system_created_at
-      FROM work
-      WHERE $1 = ANY(provider_id)
+    // 1️⃣ Get work_ids from leads table only
+    const leadsQuery = `
+      SELECT *
+      FROM leads
+      WHERE provider_id = $1
+      ORDER BY created_at DESC
     `;
-    const { rows: workLeads } = await pool.query(workQuery, [providerId]);
+    const { rows: leadRows } = await pool.query(leadsQuery, [providerId]);
 
-    // 2. Manual leads
-    const manualLeadQuery = `
-      SELECT 
-        w.*, 
-        l.id AS lead_id,
-        l.status AS lead_status,
-        l.description AS lead_description,
-        l.created_at AS lead_created_at
-      FROM leads l
-      JOIN work w ON w.id = l.work_id
-      WHERE l.provider_id = $1
-    `;
-    const { rows: manualLeads } = await pool.query(manualLeadQuery, [providerId]);
-
-    // 3. Merge & dedupe
-    const map = new Map();
-    [...workLeads, ...manualLeads].forEach(item => map.set(item.id, item));
-    let allWorks = Array.from(map.values());
-
-    if (!allWorks.length) {
+    if (leadRows.length === 0) {
       return res.json({ success: true, data: [] });
     }
 
-    // 4. Sorting
-    allWorks.sort((a, b) => {
-      const aTime = a.lead_created_at || a.system_created_at || a.created_at;
-      const bTime = b.lead_created_at || b.system_created_at || b.created_at;
-      return new Date(bTime) - new Date(aTime);
-    });
+    const workIds = leadRows.map(l => l.work_id);
 
-    // 5. Get users
-    const userIds = [...new Set(allWorks.map(w => w.user_id).filter(Boolean))];
+    // 2️⃣ Fetch work details
+    const workQuery = `
+      SELECT *
+      FROM work
+      WHERE id = ANY($1)
+    `;
+    const { rows: works } = await pool.query(workQuery, [workIds]);
+
+    // 3️⃣ Create map for fast access
+    const leadMap = {};
+    leadRows.forEach(l => (leadMap[l.work_id] = l));
+
+    // 4️⃣ Get users
+    const userIds = [...new Set(works.map(w => w.user_id).filter(Boolean))];
     const users = await UsersModel.findByIds(userIds);
+
     const userMap = {};
     users.forEach(u => (userMap[u.id] = u));
 
-    // 6. Get categories
+    // 5️⃣ Get categories
     const { rows: categories } = await pool.query("SELECT * FROM categories");
     const categoryMap = {};
     categories.forEach(c => (categoryMap[c.id] = c));
 
-    // 7. Get luxury levels (design table)
+    // 6️⃣ Get luxury levels
     const { rows: designList } = await pool.query("SELECT * FROM design");
     const designMap = {};
     designList.forEach(d => (designMap[d.id] = d));
 
-    // 8. Build final response
-    const result = allWorks.map(w => ({
-      ...w,
+    // 7️⃣ Build response — same as old logic, but with luxury type added
+    const result = works.map(w => {
+      const lead = leadMap[w.id];
 
-      user: userMap[w.user_id] || null,
-      category: categoryMap[w.project_type] || null,
+      return {
+        ...w,
 
-      lead_id: w.lead_id || null,
-      status: w.lead_status ?? "Awaiting Review",
-      proposal_note: w.lead_description ?? "",
-      lead_created_at: w.lead_created_at || null,
+        user: userMap[w.user_id] || null,
+        category: categoryMap[w.project_type] || null,
 
-      // 🔥 Luxury info added
-      luxury_level: w.luxury_level,
-      luxury_level_details: designMap[w.luxury_level] || null,
-      luxury_type: designMap[w.luxury_level]?.name || null,
+        // Lead table fields
+        lead_id: lead.id,
+        status: lead.status,
+        proposal_note: lead.description,
+        lead_created_at: lead.created_at,
 
-      lead_source: manualLeads.find(m => m.id === w.id) ? "manual" : "system"
-    }));
+        // Luxury design info
+        luxury_level: w.luxury_level,
+        luxury_level_details: designMap[w.luxury_level] || null,
+        luxury_type: designMap[w.luxury_level]?.name || null,
+      };
+    });
 
     return res.json({ success: true, data: result });
 
@@ -662,6 +655,7 @@ exports.getLeads = async (req, res) => {
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
+
 
 
 exports.addLead = async (req, res) => {
