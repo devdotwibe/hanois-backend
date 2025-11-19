@@ -814,9 +814,11 @@ exports.getLeadWorkIds = async (req, res) => {
 };
 
 
+
 exports.createProposal = async (req, res, next) => {
   try {
     const provider_id = req.user?.id; // provider logged in
+
     const {
       user_id,
       work_id,
@@ -857,6 +859,4 @@ exports.createProposal = async (req, res, next) => {
     next(err);
   }
 };
-
-
 
