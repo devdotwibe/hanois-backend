@@ -514,13 +514,35 @@ exports.getProjectById = async (req, res, next) => {
     next(err);
   }
 };
-
 exports.updateProject = async (req, res, next) => {
   try {
     const projectId = req.params.id;
-    const fields = req.body;
+    let fields = req.body;
 
-    // If no fields sent in update body
+    // 🔥 Fix incoming keys from frontend to match DB columns
+    const keyMap = {
+      projectType: "project_type",
+      landSize: "land_size",
+      luxuryLevel: "luxury_level",
+      services: "service_ids",
+      service_ids: "service_ids",
+      constructionBudget: "construction_budget",
+      listingStyle: "listing_style",
+      provider_id: "provider_id",
+      build_area: "build_area",
+      cost_finsh: "cost_finsh",
+      suggest_cost: "suggest_cost",
+      total_cost: "total_cost",
+    };
+
+    // 🔄 Rename keys to match database column names
+    Object.keys(fields).forEach((key) => {
+      if (keyMap[key]) {
+        fields[keyMap[key]] = fields[key];
+        delete fields[key];
+      }
+    });
+
     if (!fields || Object.keys(fields).length === 0) {
       return res.status(400).json({
         success: false,
@@ -528,7 +550,7 @@ exports.updateProject = async (req, res, next) => {
       });
     }
 
-    // Build dynamic SQL query
+    // Build dynamic SQL update query
     const keys = Object.keys(fields);
     const values = Object.values(fields);
 
@@ -554,19 +576,19 @@ exports.updateProject = async (req, res, next) => {
 
     const project = updated.rows[0];
 
-    // Fetch updated category
+    // 📌 Fetch category (project type details)
     const category = await pool.query(
       "SELECT * FROM categories WHERE id = $1",
       [project.project_type]
     );
 
-    // Fetch updated luxury level
+    // 📌 Fetch luxury level (design details)
     const luxury = await pool.query(
       "SELECT * FROM design WHERE id = $1",
       [project.luxury_level]
     );
 
-    // Fetch updated services
+    // 📌 Fetch list of services
     let service_list = [];
     if (project.service_ids?.length > 0) {
       const { rows } = await pool.query(
@@ -585,12 +607,11 @@ exports.updateProject = async (req, res, next) => {
           category: category.rows[0] || null,
           luxury_level_details: luxury.rows[0] || null,
           service_list,
-        }
-      }
+        },
+      },
     });
 
   } catch (err) {
     next(err);
   }
 };
-
