@@ -927,7 +927,7 @@ exports.updateProposal = async (req, res, next) => {
       attachment = req.file.filename;
     }
 
-    await pool.query(
+   await pool.query(
       `
       UPDATE proposals
       SET 
@@ -935,8 +935,7 @@ exports.updateProposal = async (req, res, next) => {
         budget = $2,
         timeline = $3,
         description = $4,
-        attachment = $5,
-     
+        attachment = $5
       WHERE id = $6 AND provider_id = $7
       `,
       [title, budget, timeline, description, attachment, proposalId, provider_id]
@@ -945,7 +944,7 @@ exports.updateProposal = async (req, res, next) => {
     return successResponse(res, null, "Proposal updated successfully");
 
   } catch (error) {
-    console.error("🔥 Update Proposal Error:", error); // PRINT FULL ERROR
+    console.error("🔥 Update Proposal Error:", error);
     return errorResponse(res, error.message || "Internal server error", 500);
   }
 };
