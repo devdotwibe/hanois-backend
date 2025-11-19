@@ -936,7 +936,7 @@ exports.updateProposal = async (req, res, next) => {
         timeline = $3,
         description = $4,
         attachment = $5,
-        updated_at = NOW()
+     
       WHERE id = $6 AND provider_id = $7
       `,
       [title, budget, timeline, description, attachment, proposalId, provider_id]
