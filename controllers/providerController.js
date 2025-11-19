@@ -668,7 +668,7 @@ const manualLeadQuery = `
         proposal_id: w.proposal_id || null,
   proposal_status: w.proposal_status || null,
 
-  
+
       // Luxury type
       luxury_level: w.luxury_level,
       luxury_level_details: designMap[w.luxury_level] || null,
@@ -874,3 +874,35 @@ exports.createProposal = async (req, res, next) => {
     next(err);
   }
 };
+
+
+exports.getProposalById = async (req, res, next) => {
+  try {
+    const proposal_id = req.params.id;
+
+    if (!proposal_id) {
+      return errorResponse(res, "Proposal ID is required", 400);
+    }
+
+    // Fetch proposal
+    const proposal = await ProposalsModel.getById(proposal_id);
+
+    if (!proposal) {
+      return errorResponse(res, "Proposal not found", 404);
+    }
+
+    // Fetch user info
+    const user = await UsersModel.findById(proposal.user_id);
+
+    return successResponse(res, {
+      ...proposal,
+      user: user || null
+    }, "Proposal retrieved successfully");
+
+  } catch (err) {
+    console.error("Error in getProposalById:", err);
+    next(err);
+  }
+};
+
+

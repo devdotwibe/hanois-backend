@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 
-// ================= MULTER FOR PROPOSAL UPLOAD (USE SAME PATH AS OLD UPLOAD) =================
+// ================= MULTER FOR PROPOSAL UPLOAD =================
 const multer = require("multer");
 const path = require("path");
 
 const proposalStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "../public/banner")); // ✅ SAME PATH YOU ALREADY USE
+    cb(null, path.join(__dirname, "../public/banner")); // SAME PATH
   },
   filename: (req, file, cb) => {
     const uniqueName = Date.now() + "_" + Math.round(Math.random() * 1e9);
@@ -32,7 +32,10 @@ const {
   addLead,
   updateLead,
   getLeadWorkIds,
-  createProposal
+
+  // PROPOSALS
+  createProposal,
+  getProposalById            // <=== IMPORTANT
 } = require('../controllers/providerController');
 
 const { providerValidation } = require('../middleware/validation');
@@ -58,8 +61,15 @@ router.get("/lead-work-ids", authenticateToken, getLeadWorkIds);
 router.post(
   "/send-proposal",
   authenticateToken,
-  uploadProposal.single("attachment"),   // <=== FILE UPLOAD
+  uploadProposal.single("attachment"),
   createProposal
+);
+
+// ⭐⭐ NEW ROUTE — View Proposal (must be before :id route)
+router.get(
+  "/view-proposal/:id",
+  authenticateToken,
+  getProposalById
 );
 
 // ========================= PROFILE =========================
