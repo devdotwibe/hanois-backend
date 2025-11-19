@@ -35,7 +35,8 @@ const {
 
   // PROPOSALS
   createProposal,
-  getProposalById            // <=== IMPORTANT
+  getProposalById,
+   updateProposal             // <=== IMPORTANT
 } = require('../controllers/providerController');
 
 const { providerValidation } = require('../middleware/validation');
@@ -71,6 +72,14 @@ router.get(
   authenticateToken,
   getProposalById
 );
+
+router.post(
+  "/update-proposal/:id",
+  authenticateToken,
+  uploadProposal.single("attachment"),  // file upload support
+  updateProposal
+);
+
 
 // ========================= PROFILE =========================
 router.put('/update-profile/:providerId', authenticateToken, updateProviderProfile);

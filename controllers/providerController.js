@@ -906,3 +906,56 @@ exports.getProposalById = async (req, res, next) => {
 };
 
 
+exports.updateProposal = async (req, res) => {
+  try {
+    const proposalId = req.params.id;
+    const userId = req.user.id; // provider ID from token
+
+    const { title, budget, timeline, description } = req.body;
+
+    // Fetch existing proposal
+    const check = await pool.query(
+      `SELECT * FROM proposals WHERE id = $1 AND user_id = $2`,
+      [proposalId, userId]
+    );
+
+    if (check.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Proposal not found" });
+    }
+
+    let attachment = check.rows[0].attachment;
+
+    // If user uploaded new file → update filename
+    if (req.file) {
+      attachment = req.file.filename;
+    }
+
+    // Update proposal
+    await pool.query(
+      `
+      UPDATE proposals
+      SET title = $1,
+          budget = $2,
+          timeline = $3,
+          description = $4,
+          attachment = $5,
+          updated_at = NOW()
+      WHERE id = $6 AND user_id = $7
+    `,
+      [title, budget, timeline, description, attachment, proposalId, userId]
+    );
+
+    return res.json({
+      success: true,
+      message: "Proposal updated successfully",
+    });
+  } catch (error) {
+    console.log("Update proposal error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
