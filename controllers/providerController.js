@@ -591,17 +591,27 @@ exports.getLeads = async (req, res) => {
     const { rows: systemLeads } = await pool.query(workQuery, [providerId]);
 
     // 2️⃣ Manual Leads (leads + work join)
-    const manualLeadQuery = `
-      SELECT 
-        w.*,
-        l.id AS lead_id,
-        l.status AS lead_status,
-        l.description AS lead_description,
-        l.created_at AS lead_created_at
-      FROM leads l
-      JOIN work w ON w.id = l.work_id
-      WHERE l.provider_id = $1
-    `;
+const manualLeadQuery = `
+  SELECT 
+    w.*,
+    l.id AS lead_id,
+    l.status AS lead_status,
+    l.description AS lead_description,
+    l.created_at AS lead_created_at,
+
+    -- 🚀 proposal fields added
+    p.id AS proposal_id,
+    p.status AS proposal_status
+
+  FROM leads l
+  JOIN work w ON w.id = l.work_id
+  LEFT JOIN proposals p 
+      ON p.work_id = w.id 
+      AND p.provider_id = $1
+
+  WHERE l.provider_id = $1
+`;
+
     const { rows: manualLeads } = await pool.query(manualLeadQuery, [providerId]);
 
     // 3️⃣ Merge without overwriting work table fields
@@ -654,6 +664,11 @@ exports.getLeads = async (req, res) => {
       proposal_note: w.lead_description ?? "",
       lead_created_at: w.lead_created_at || null,
 
+
+        proposal_id: w.proposal_id || null,
+  proposal_status: w.proposal_status || null,
+
+  
       // Luxury type
       luxury_level: w.luxury_level,
       luxury_level_details: designMap[w.luxury_level] || null,
