@@ -514,6 +514,7 @@ exports.getProjectById = async (req, res, next) => {
     next(err);
   }
 };
+
 exports.updateProject = async (req, res, next) => {
   try {
     const projectId = req.params.id;
@@ -528,14 +529,8 @@ exports.updateProject = async (req, res, next) => {
       service_ids: "service_ids",
       constructionBudget: "construction_budget",
       listingStyle: "listing_style",
-      provider_id: "provider_id",
-      build_area: "build_area",
-      cost_finsh: "cost_finsh",
-      suggest_cost: "suggest_cost",
-      total_cost: "total_cost",
     };
 
-    // 🔄 Rename keys to match database column names
     Object.keys(fields).forEach((key) => {
       if (keyMap[key]) {
         fields[keyMap[key]] = fields[key];
@@ -543,14 +538,24 @@ exports.updateProject = async (req, res, next) => {
       }
     });
 
+    // 🔥 REMOVE all non-table fields (IMPORTANT)
+    delete fields.category;
+    delete fields.luxury_level_details;
+    delete fields.service_list;
+    delete fields.user;
+    delete fields.created_at;
+    delete fields.id;
+    delete fields.status;
+
+    // Stop if nothing left
     if (!fields || Object.keys(fields).length === 0) {
       return res.status(400).json({
         success: false,
-        error: "No fields provided for update.",
+        error: "No valid fields provided for update.",
       });
     }
 
-    // Build dynamic SQL update query
+    // Build SQL dynamically
     const keys = Object.keys(fields);
     const values = Object.values(fields);
 
@@ -576,19 +581,17 @@ exports.updateProject = async (req, res, next) => {
 
     const project = updated.rows[0];
 
-    // 📌 Fetch category (project type details)
+    // Fetch relations again
     const category = await pool.query(
       "SELECT * FROM categories WHERE id = $1",
       [project.project_type]
     );
 
-    // 📌 Fetch luxury level (design details)
     const luxury = await pool.query(
       "SELECT * FROM design WHERE id = $1",
       [project.luxury_level]
     );
 
-    // 📌 Fetch list of services
     let service_list = [];
     if (project.service_ids?.length > 0) {
       const { rows } = await pool.query(
