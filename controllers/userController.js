@@ -515,4 +515,82 @@ exports.getProjectById = async (req, res, next) => {
   }
 };
 
+exports.updateProject = async (req, res, next) => {
+  try {
+    const projectId = req.params.id;
+    const fields = req.body;
+
+    // If no fields sent in update body
+    if (!fields || Object.keys(fields).length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "No fields provided for update.",
+      });
+    }
+
+    // Build dynamic SQL query
+    const keys = Object.keys(fields);
+    const values = Object.values(fields);
+
+    const setQuery = keys
+      .map((key, index) => `${key} = $${index + 1}`)
+      .join(", ");
+
+    const updateQuery = `
+      UPDATE work 
+      SET ${setQuery}
+      WHERE id = ${projectId}
+      RETURNING *
+    `;
+
+    const updated = await pool.query(updateQuery, values);
+
+    if (!updated.rows.length) {
+      return res.status(404).json({
+        success: false,
+        error: "Project not found",
+      });
+    }
+
+    const project = updated.rows[0];
+
+    // Fetch updated category
+    const category = await pool.query(
+      "SELECT * FROM categories WHERE id = $1",
+      [project.project_type]
+    );
+
+    // Fetch updated luxury level
+    const luxury = await pool.query(
+      "SELECT * FROM design WHERE id = $1",
+      [project.luxury_level]
+    );
+
+    // Fetch updated services
+    let service_list = [];
+    if (project.service_ids?.length > 0) {
+      const { rows } = await pool.query(
+        `SELECT * FROM services WHERE id = ANY($1)`,
+        [project.service_ids]
+      );
+      service_list = rows;
+    }
+
+    return res.json({
+      success: true,
+      message: "Project updated successfully",
+      data: {
+        project: {
+          ...project,
+          category: category.rows[0] || null,
+          luxury_level_details: luxury.rows[0] || null,
+          service_list,
+        }
+      }
+    });
+
+  } catch (err) {
+    next(err);
+  }
+};
 

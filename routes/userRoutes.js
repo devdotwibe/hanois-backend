@@ -12,7 +12,11 @@ const {
   forgotPassword,
   upload,
   updateProfile,
-   getProjectById 
+   getProjectById ,
+
+     updateProject 
+
+     
 } = require('../controllers/userController');
 const { validateRegistration, validateLogin } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
@@ -23,6 +27,11 @@ router.post('/login', validateLogin, login);
 
 router.post('/add_project', authenticateToken, add_project);
 router.get('/project/:id', authenticateToken, getProjectById);
+
+
+router.put('/project/:id', authenticateToken, updateProject);
+
+
 
 
 
