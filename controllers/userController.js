@@ -456,3 +456,63 @@ exports.getPublicProjects = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.getProjectById = async (req, res, next) => {
+  try {
+    const projectId = req.params.id;
+
+    // 1. Fetch project
+    const { rows } = await pool.query(
+      "SELECT * FROM work WHERE id = $1",
+      [projectId]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Project not found",
+      });
+    }
+
+    const project = rows[0];
+
+    // 2. Fetch category (project type)
+    const category = await pool.query(
+      "SELECT * FROM categories WHERE id = $1",
+      [project.project_type]
+    );
+
+    // 3. Fetch luxury level (design)
+    const luxury = await pool.query(
+      "SELECT * FROM design WHERE id = $1",
+      [project.luxury_level]
+    );
+
+    // 4. Fetch services
+    let service_list = [];
+    if (project.service_ids?.length > 0) {
+      const { rows } = await pool.query(
+        `SELECT * FROM services WHERE id = ANY($1)`,
+        [project.service_ids]
+      );
+      service_list = rows;
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        project: {
+          ...project,
+          category: category.rows[0] || null,
+          luxury_level_details: luxury.rows[0] || null,
+          service_list,
+        }
+      }
+    });
+
+  } catch (err) {
+    next(err);
+  }
+};
+
+

@@ -21,6 +21,9 @@ router.post('/register', validateRegistration, registerUser);
 router.post('/login', validateLogin, login);
 
 router.post('/add_project', authenticateToken, add_project);
+router.get('/project/:id', authenticateToken, getProjectById);
+
+
 
 router.get("/my-projects", authenticateToken, getMyProjects);
 
