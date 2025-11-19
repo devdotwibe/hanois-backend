@@ -572,7 +572,6 @@ exports.getAllProviderServices = async (req, res, next) => {
     });
   }
 };
-
 exports.getLeads = async (req, res) => {
   try {
     const providerId = req.user?.id;
@@ -581,81 +580,95 @@ exports.getLeads = async (req, res) => {
       return res.status(400).json({ success: false, error: "Provider ID not found" });
     }
 
-    // 1️⃣ Get work_ids from leads table only
-    const leadsQuery = `
-      SELECT *
-      FROM leads
-      WHERE provider_id = $1
-      ORDER BY created_at DESC
+    // 1️⃣ System Leads (work table)
+    const workQuery = `
+      SELECT *,
+      created_at AS system_created_at
+      FROM work
+      WHERE $1 = ANY(provider_id)
     `;
-    const { rows: leadRows } = await pool.query(leadsQuery, [providerId]);
+    const { rows: systemLeads } = await pool.query(workQuery, [providerId]);
 
-    if (leadRows.length === 0) {
+    // 2️⃣ Manual Leads (leads + work join)
+    const manualLeadQuery = `
+      SELECT 
+        w.*,
+        l.id AS lead_id,
+        l.status AS lead_status,
+        l.description AS lead_description,
+        l.created_at AS lead_created_at
+      FROM leads l
+      JOIN work w ON w.id = l.work_id
+      WHERE l.provider_id = $1
+    `;
+    const { rows: manualLeads } = await pool.query(manualLeadQuery, [providerId]);
+
+    // 3️⃣ Merge without overwriting work table fields
+    const map = new Map();
+
+    // → First insert system leads
+    systemLeads.forEach(sys => map.set(sys.id, { ...sys, lead_id: null }));
+
+    // → Then insert manual leads (adds lead fields)
+    manualLeads.forEach(man => map.set(man.id, { ...map.get(man.id), ...man }));
+
+    const allLeads = Array.from(map.values());
+
+    if (allLeads.length === 0) {
       return res.json({ success: true, data: [] });
     }
 
-    const workIds = leadRows.map(l => l.work_id);
+    // 4️⃣ Sort (latest first)
+    allLeads.sort((a, b) => {
+      const A = a.lead_created_at || a.system_created_at || a.created_at;
+      const B = b.lead_created_at || b.system_created_at || b.created_at;
+      return new Date(B) - new Date(A);
+    });
 
-    // 2️⃣ Fetch work details
-    const workQuery = `
-      SELECT *
-      FROM work
-      WHERE id = ANY($1)
-    `;
-    const { rows: works } = await pool.query(workQuery, [workIds]);
-
-    // 3️⃣ Create map for fast access
-    const leadMap = {};
-    leadRows.forEach(l => (leadMap[l.work_id] = l));
-
-    // 4️⃣ Get users
-    const userIds = [...new Set(works.map(w => w.user_id).filter(Boolean))];
+    // 5️⃣ Load related tables
+    const userIds = [...new Set(allLeads.map(w => w.user_id).filter(Boolean))];
     const users = await UsersModel.findByIds(userIds);
-
     const userMap = {};
     users.forEach(u => (userMap[u.id] = u));
 
-    // 5️⃣ Get categories
     const { rows: categories } = await pool.query("SELECT * FROM categories");
     const categoryMap = {};
     categories.forEach(c => (categoryMap[c.id] = c));
 
-    // 6️⃣ Get luxury levels
     const { rows: designList } = await pool.query("SELECT * FROM design");
     const designMap = {};
     designList.forEach(d => (designMap[d.id] = d));
 
-    // 7️⃣ Build response — same as old logic, but with luxury type added
-    const result = works.map(w => {
-      const lead = leadMap[w.id];
+    // 6️⃣ Build final response
+    const finalList = allLeads.map(w => ({
+      ...w,
 
-      return {
-        ...w,
+      // Attach user & category
+      user: userMap[w.user_id] || null,
+      category: categoryMap[w.project_type] || null,
 
-        user: userMap[w.user_id] || null,
-        category: categoryMap[w.project_type] || null,
+      // Manual lead fields
+      lead_id: w.lead_id || null,
+      status: w.lead_status ?? "Awaiting Review",
+      proposal_note: w.lead_description ?? "",
+      lead_created_at: w.lead_created_at || null,
 
-        // Lead table fields
-        lead_id: lead.id,
-        status: lead.status,
-        proposal_note: lead.description,
-        lead_created_at: lead.created_at,
+      // Luxury type
+      luxury_level: w.luxury_level,
+      luxury_level_details: designMap[w.luxury_level] || null,
+      luxury_type: designMap[w.luxury_level]?.name || null,
 
-        // Luxury design info
-        luxury_level: w.luxury_level,
-        luxury_level_details: designMap[w.luxury_level] || null,
-        luxury_type: designMap[w.luxury_level]?.name || null,
-      };
-    });
+      // Lead source
+      lead_source: w.lead_id ? "manual" : "system"
+    }));
 
-    return res.json({ success: true, data: result });
+    return res.json({ success: true, data: finalList });
 
   } catch (err) {
     console.error("Error in getLeads:", err);
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
-
 
 
 exports.addLead = async (req, res) => {
