@@ -1,4 +1,5 @@
-const db = require("../config/db"); // your PostgreSQL db connection
+const db = require("../db/pool");
+// your PostgreSQL db connection
 
 const ProposalsModel = {
   
