@@ -11,7 +11,8 @@ const {
   getPublicProjects,
   forgotPassword,
   upload,
-  updateProfile
+  updateProfile,
+   getProjectById 
 } = require('../controllers/userController');
 const { validateRegistration, validateLogin } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
