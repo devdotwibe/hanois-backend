@@ -61,7 +61,7 @@ if (!fs.existsSync(projectUploadDir)) {
 
 
 app.use('/banner', express.static(bannerDir));
-app.use('/api/banner', express.static(bannerDir));  
+
 app.use('/uploads/projects', express.static(projectUploadDir));
 
 app.use(
