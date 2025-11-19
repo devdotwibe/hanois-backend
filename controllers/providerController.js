@@ -819,30 +819,30 @@ exports.createProposal = async (req, res, next) => {
   try {
     const provider_id = req.user?.id; // provider logged in
 
+    // 🔥 READ TEXT FIELDS (sent via form-data)
     const {
       user_id,
       work_id,
       title,
       budget,
       timeline,
-      description,
-      attachment
+      description
     } = req.body;
+
+    // 🔥 READ FILE (multer stores file info here)
+    const attachment = req.file ? req.file.filename : null;
 
     if (!provider_id || !user_id || !work_id) {
       return errorResponse(res, "Missing required fields", 400);
     }
 
-    // Check if provider already sent proposal for this work
+    // Prevent duplicate proposal for same work_id
     const exists = await ProposalsModel.checkExisting(provider_id, work_id);
     if (exists) {
-      return errorResponse(
-        res,
-        "Proposal already submitted for this project",
-        409
-      );
+      return errorResponse(res, "Proposal already submitted for this project", 409);
     }
 
+    // 🔥 SAVE TO DATABASE
     const newProposal = await ProposalsModel.createProposal({
       user_id,
       provider_id,
@@ -851,7 +851,7 @@ exports.createProposal = async (req, res, next) => {
       budget,
       timeline,
       description,
-      attachment
+      attachment   // <-- file path stored here
     });
 
     return successResponse(res, newProposal, "Proposal sent successfully");
@@ -859,4 +859,3 @@ exports.createProposal = async (req, res, next) => {
     next(err);
   }
 };
-

@@ -1,6 +1,23 @@
 const express = require('express');
 const router = express.Router();
 
+// ================= MULTER FOR PROPOSAL UPLOAD (USE SAME PATH AS OLD UPLOAD) =================
+const multer = require("multer");
+const path = require("path");
+
+const proposalStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, "../public/banner")); // ✅ SAME PATH YOU ALREADY USE
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = Date.now() + "_" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueName + path.extname(file.originalname));
+  }
+});
+
+const uploadProposal = multer({ storage: proposalStorage });
+// ========================================================================
+
 const {
   registerProvider,
   resetPassword,
@@ -15,12 +32,7 @@ const {
   addLead,
   updateLead,
   getLeadWorkIds,
-
-  // ===== PROPOSAL CONTROLLERS =====
-  createProposal,
-  // getProviderProposals,
-  // getUserProposals
-
+  createProposal
 } = require('../controllers/providerController');
 
 const { providerValidation } = require('../middleware/validation');
@@ -31,37 +43,33 @@ const { authenticateToken } = require('../middleware/auth');
 router.post('/register', providerValidation, registerProvider);
 router.post('/reset-password', resetPassword);
 
-
 // ========================= PUBLIC =========================
 router.get('/', getProviders);
 router.get('/all-provider-services', getAllProviderServices);
 router.get('/by-category/:categoryId', getProvidersByCategory);
 
-
-// ========================= LEADS (MUST be before :id) =========================
+// ========================= LEADS =========================
 router.get("/get_leads", authenticateToken, getLeads);
 router.post("/add-lead", authenticateToken, addLead);
 router.post("/update-lead", authenticateToken, updateLead);
 router.get("/lead-work-ids", authenticateToken, getLeadWorkIds);
 
-
-// ========================= PROPOSALS (MUST be before :id) =========================
-router.post("/send-proposal", authenticateToken, createProposal);
-// router.get("/my-proposals", authenticateToken, getProviderProposals);
-// router.get("/user-proposals", authenticateToken, getUserProposals);
-
+// ========================= PROPOSALS =========================
+router.post(
+  "/send-proposal",
+  authenticateToken,
+  uploadProposal.single("attachment"),   // <=== FILE UPLOAD
+  createProposal
+);
 
 // ========================= PROFILE =========================
 router.put('/update-profile/:providerId', authenticateToken, updateProviderProfile);
-
 
 // ========================= CRUD =========================
 router.put('/:id', authenticateToken, updateProvider);
 router.delete('/:id', authenticateToken, deleteProvider);
 
-
-// ========================= SINGLE PROVIDER (ALWAYS LAST) =========================
+// ========================= SINGLE PROVIDER =========================
 router.get('/:id', authenticateToken, getProviderById);
-
 
 module.exports = router;
