@@ -514,13 +514,12 @@ exports.getProjectById = async (req, res, next) => {
     next(err);
   }
 };
-
 exports.updateProject = async (req, res, next) => {
   try {
     const projectId = req.params.id;
     let fields = req.body;
 
-    // 🔥 Fix incoming keys from frontend to match DB columns
+    // Map frontend keys to DB columns
     const keyMap = {
       projectType: "project_type",
       landSize: "land_size",
@@ -538,7 +537,12 @@ exports.updateProject = async (req, res, next) => {
       }
     });
 
-    // 🔥 REMOVE all non-table fields (IMPORTANT)
+    // Ensure service_ids is always an array of numbers
+    if (fields.service_ids) {
+      fields.service_ids = fields.service_ids.map(Number);
+    }
+
+    // Remove non-table fields
     delete fields.category;
     delete fields.luxury_level_details;
     delete fields.service_list;
@@ -547,7 +551,7 @@ exports.updateProject = async (req, res, next) => {
     delete fields.id;
     delete fields.status;
 
-    // Stop if nothing left
+    // No valid fields
     if (!fields || Object.keys(fields).length === 0) {
       return res.status(400).json({
         success: false,
@@ -555,7 +559,7 @@ exports.updateProject = async (req, res, next) => {
       });
     }
 
-    // Build SQL dynamically
+    // Build SQL set clause dynamically
     const keys = Object.keys(fields);
     const values = Object.values(fields);
 
