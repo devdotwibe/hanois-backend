@@ -16,10 +16,10 @@ const {
   updateLead,
   getLeadWorkIds,
 
-  // ===== PROPOSALS =====
+  // ===== PROPOSAL CONTROLLERS =====
   createProposal,
-  getProviderProposals,
-  getUserProposals
+  // getProviderProposals,
+  // getUserProposals
 
 } = require('../controllers/providerController');
 
@@ -27,42 +27,41 @@ const { providerValidation } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
 
 
-// =================== AUTH + REGISTER ===================
+// ========================= AUTH =========================
 router.post('/register', providerValidation, registerProvider);
 router.post('/reset-password', resetPassword);
 
 
-// =================== PUBLIC LISTINGS ===================
+// ========================= PUBLIC =========================
 router.get('/', getProviders);
 router.get('/all-provider-services', getAllProviderServices);
 router.get('/by-category/:categoryId', getProvidersByCategory);
 
 
-// =================== LEADS ===================
-// MUST be before any "/:id"
+// ========================= LEADS (MUST be before :id) =========================
 router.get("/get_leads", authenticateToken, getLeads);
 router.post("/add-lead", authenticateToken, addLead);
 router.post("/update-lead", authenticateToken, updateLead);
 router.get("/lead-work-ids", authenticateToken, getLeadWorkIds);
 
 
-// =================== PROPOSALS ===================
-// MUST be before "/:id"
+// ========================= PROPOSALS (MUST be before :id) =========================
 router.post("/send-proposal", authenticateToken, createProposal);
-router.get("/my-proposals", authenticateToken, getProviderProposals);
-router.get("/user-proposals", authenticateToken, getUserProposals);
+// router.get("/my-proposals", authenticateToken, getProviderProposals);
+// router.get("/user-proposals", authenticateToken, getUserProposals);
 
 
-// =================== PROFILE ===================
+// ========================= PROFILE =========================
 router.put('/update-profile/:providerId', authenticateToken, updateProviderProfile);
 
 
-// =================== CRUD ===================
+// ========================= CRUD =========================
 router.put('/:id', authenticateToken, updateProvider);
 router.delete('/:id', authenticateToken, deleteProvider);
 
 
-// =================== SINGLE PROVIDER (MUST BE LAST) ===================
+// ========================= SINGLE PROVIDER (ALWAYS LAST) =========================
 router.get('/:id', authenticateToken, getProviderById);
+
 
 module.exports = router;
