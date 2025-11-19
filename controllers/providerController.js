@@ -908,11 +908,10 @@ exports.getProposalById = async (req, res, next) => {
 exports.updateProposal = async (req, res, next) => {
   try {
     const proposalId = req.params.id;
-    const provider_id = req.user.id; // provider logged in
+    const provider_id = req.user.id;
 
     const { title, budget, timeline, description } = req.body;
 
-    // Check if proposal exists AND belongs to this provider
     const check = await pool.query(
       `SELECT * FROM proposals WHERE id = $1 AND provider_id = $2`,
       [proposalId, provider_id]
@@ -924,12 +923,10 @@ exports.updateProposal = async (req, res, next) => {
 
     let attachment = check.rows[0].attachment;
 
-    // If new file uploaded → update filename
     if (req.file) {
       attachment = req.file.filename;
     }
 
-    // Update proposal
     await pool.query(
       `
       UPDATE proposals
@@ -942,20 +939,13 @@ exports.updateProposal = async (req, res, next) => {
         updated_at = NOW()
       WHERE id = $6 AND provider_id = $7
       `,
-      [
-        title,
-        budget,
-        timeline,
-        description,
-        attachment,
-        proposalId,
-        provider_id,
-      ]
+      [title, budget, timeline, description, attachment, proposalId, provider_id]
     );
 
     return successResponse(res, null, "Proposal updated successfully");
+
   } catch (error) {
-    console.error("Update proposal error:", error);
-    return errorResponse(res, "Internal server error", 500);
+    console.error("🔥 Update Proposal Error:", error); // PRINT FULL ERROR
+    return errorResponse(res, error.message || "Internal server error", 500);
   }
 };
