@@ -905,29 +905,26 @@ exports.getProposalById = async (req, res, next) => {
   }
 };
 
-
-exports.updateProposal = async (req, res) => {
+exports.updateProposal = async (req, res, next) => {
   try {
     const proposalId = req.params.id;
-    const userId = req.user.id; // provider ID from token
+    const provider_id = req.user.id; // provider logged in
 
     const { title, budget, timeline, description } = req.body;
 
-    // Fetch existing proposal
+    // Check if proposal exists AND belongs to this provider
     const check = await pool.query(
-      `SELECT * FROM proposals WHERE id = $1 AND user_id = $2`,
-      [proposalId, userId]
+      `SELECT * FROM proposals WHERE id = $1 AND provider_id = $2`,
+      [proposalId, provider_id]
     );
 
     if (check.rows.length === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Proposal not found" });
+      return errorResponse(res, "Proposal not found", 404);
     }
 
     let attachment = check.rows[0].attachment;
 
-    // If user uploaded new file → update filename
+    // If new file uploaded → update filename
     if (req.file) {
       attachment = req.file.filename;
     }
@@ -936,26 +933,29 @@ exports.updateProposal = async (req, res) => {
     await pool.query(
       `
       UPDATE proposals
-      SET title = $1,
-          budget = $2,
-          timeline = $3,
-          description = $4,
-          attachment = $5,
-          updated_at = NOW()
-      WHERE id = $6 AND user_id = $7
-    `,
-      [title, budget, timeline, description, attachment, proposalId, userId]
+      SET 
+        title = $1,
+        budget = $2,
+        timeline = $3,
+        description = $4,
+        attachment = $5,
+        updated_at = NOW()
+      WHERE id = $6 AND provider_id = $7
+      `,
+      [
+        title,
+        budget,
+        timeline,
+        description,
+        attachment,
+        proposalId,
+        provider_id,
+      ]
     );
 
-    return res.json({
-      success: true,
-      message: "Proposal updated successfully",
-    });
+    return successResponse(res, null, "Proposal updated successfully");
   } catch (error) {
-    console.log("Update proposal error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
+    console.error("Update proposal error:", error);
+    return errorResponse(res, "Internal server error", 500);
   }
 };
