@@ -81,7 +81,7 @@ router.post(
 );
 
 // DELETE ATTACHMENT (must be BEFORE wildcard)
-router.post(
+router.delete(
   "/delete-proposal-attachment/:id",
   authenticateToken,
   deleteProposalAttachment
