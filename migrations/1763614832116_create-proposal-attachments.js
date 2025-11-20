@@ -5,6 +5,7 @@
  */
 exports.shorthands = undefined;
 
+
 /**
  * @param {import('node-pg-migrate').MigrationBuilder} pgm
  */
