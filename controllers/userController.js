@@ -392,17 +392,48 @@ exports.getMyProjects = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
-    const result = await pool.query(
+    // 1️⃣ Fetch all projects of this user
+    const workResult = await pool.query(
       "SELECT * FROM work WHERE user_id = $1 ORDER BY id DESC",
       [userId]
     );
 
-    res.json(result.rows);
+    const projects = workResult.rows;
+
+    if (projects.length === 0) {
+      return res.json([]);
+    }
+
+    // 2️⃣ Extract all project IDs
+    const projectIds = projects.map(p => p.id);
+
+    // 3️⃣ Fetch proposals for all those projects
+    const proposalsResult = await pool.query(
+      `
+      SELECT p.*, u.name AS provider_name, u.profile_image AS provider_image
+      FROM proposals p
+      JOIN providers u ON u.id = p.provider_id
+      WHERE p.work_id = ANY($1)
+      ORDER BY p.id DESC
+      `,
+      [projectIds]
+    );
+
+    const proposals = proposalsResult.rows;
+
+    // 4️⃣ Attach proposals under each project
+    const finalData = projects.map(project => ({
+      ...project,
+      proposals: proposals.filter(p => p.work_id === project.id)
+    }));
+
+    return res.json(finalData);
 
   } catch (err) {
     next(err);
   }
 };
+
 
 // exports.getPublicProjects = async (req, res, next) => {
 //   try {
