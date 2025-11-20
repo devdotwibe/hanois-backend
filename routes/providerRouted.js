@@ -87,7 +87,7 @@ router.post(
 );
 
 // ❌ DELETE SINGLE ATTACHMENT
-router.delete(
+router.post(
   "/delete-proposal-attachment/:id",
   authenticateToken,
   deleteProposalAttachment
