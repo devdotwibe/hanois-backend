@@ -592,7 +592,13 @@ exports.getPublicProjects = async (req, res, next) => {
     // Return filtered projects
     return res.json({ success: true, data: finalProjects });
   } catch (err) {
-    next(err);
+    console.error("Error in getPublicProjects:", err); // log server error
+
+    // Return consistent error response without breaking frontend
+    return res.status(500).json({ 
+      success: false, 
+      message: "Server error while fetching public projects" 
+    });
   }
 };
 
