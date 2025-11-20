@@ -392,7 +392,7 @@ exports.getMyProjects = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
-    // 1️⃣ Fetch all projects of this user
+    // 1️⃣ Get all projects
     const workResult = await pool.query(
       "SELECT * FROM work WHERE user_id = $1 ORDER BY id DESC",
       [userId]
@@ -404,27 +404,53 @@ exports.getMyProjects = async (req, res, next) => {
       return res.json([]);
     }
 
-    // 2️⃣ Extract all project IDs
+    // 2️⃣ Collect project IDs
     const projectIds = projects.map(p => p.id);
 
-    // 3️⃣ Fetch proposals for all those projects
+    // 3️⃣ Get all proposals for these projects
     const proposalsResult = await pool.query(
       `
-      SELECT p.*, u.name AS provider_name, u.profile_image AS provider_image
-      FROM proposals p
-      JOIN providers u ON u.id = p.provider_id
-      WHERE p.work_id = ANY($1)
-      ORDER BY p.id DESC
+      SELECT * FROM proposals
+      WHERE work_id = ANY($1)
+      ORDER BY id DESC
       `,
       [projectIds]
     );
 
     const proposals = proposalsResult.rows;
 
-    // 4️⃣ Attach proposals under each project
+    if (proposals.length === 0) {
+      // Return projects with empty proposals
+      return res.json(projects.map(p => ({ ...p, proposals: [] })));
+    }
+
+    // 4️⃣ Get all proposal IDs (to fetch attachments)
+    const proposalIds = proposals.map(p => p.id);
+
+    // 5️⃣ Get all attachments for these proposals
+    const attachmentResult = await pool.query(
+      `
+      SELECT * FROM proposal_attachments
+      WHERE proposal_id = ANY($1)
+      ORDER BY id DESC
+      `,
+      [proposalIds]
+    );
+
+    const attachments = attachmentResult.rows;
+
+    // 6️⃣ Attach attachments under each proposal
+    const proposalsWithAttachments = proposals.map(proposal => ({
+      ...proposal,
+      attachments: attachments.filter(att => att.proposal_id === proposal.id)
+    }));
+
+    // 7️⃣ Attach proposals under each project
     const finalData = projects.map(project => ({
       ...project,
-      proposals: proposals.filter(p => p.work_id === project.id)
+      proposals: proposalsWithAttachments.filter(
+        proposal => proposal.work_id === project.id
+      )
     }));
 
     return res.json(finalData);
