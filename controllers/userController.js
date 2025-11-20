@@ -596,7 +596,6 @@ exports.getPublicProjects = async (req, res, next) => {
   }
 };
 
-
 exports.getProjectById = async (req, res, next) => {
   try {
     const projectId = req.params.id;
@@ -616,19 +615,19 @@ exports.getProjectById = async (req, res, next) => {
 
     const project = rows[0];
 
-    // 2. Fetch category (project type)
+    // 2. Fetch category
     const category = await pool.query(
       "SELECT * FROM categories WHERE id = $1",
       [project.project_type]
     );
 
-    // 3. Fetch luxury level (design)
+    // 3. Fetch luxury level
     const luxury = await pool.query(
       "SELECT * FROM design WHERE id = $1",
       [project.luxury_level]
     );
 
-    // 4. Fetch services
+    // 4. Fetch service list
     let service_list = [];
     if (project.service_ids?.length > 0) {
       const { rows } = await pool.query(
@@ -638,6 +637,43 @@ exports.getProjectById = async (req, res, next) => {
       service_list = rows;
     }
 
+    // 5. FETCH PROPOSALS for this project
+    const proposalsResult = await pool.query(
+      `
+      SELECT * FROM proposals
+      WHERE work_id = $1
+      ORDER BY created_at DESC
+      `,
+      [projectId]
+    );
+
+    const proposals = proposalsResult.rows;
+
+    // 6. FETCH ATTACHMENTS for all proposals
+    const proposalIds = proposals.map((p) => p.id);
+
+    let attachments = [];
+    if (proposalIds.length > 0) {
+      const attachResult = await pool.query(
+        `
+        SELECT * FROM proposal_attachments
+        WHERE proposal_id = ANY($1)
+        ORDER BY created_at DESC
+        `,
+        [proposalIds]
+      );
+      attachments = attachResult.rows;
+    }
+
+    // 7. Merge attachments with proposals
+    const proposalsWithAttachments = proposals.map((proposal) => ({
+      ...proposal,
+      attachments: attachments.filter(
+        (a) => a.proposal_id === proposal.id
+      ),
+    }));
+
+    // 8. SEND FINAL RESPONSE
     return res.json({
       success: true,
       data: {
@@ -646,14 +682,16 @@ exports.getProjectById = async (req, res, next) => {
           category: category.rows[0] || null,
           luxury_level_details: luxury.rows[0] || null,
           service_list,
-        }
-      }
+          proposals: proposalsWithAttachments,   // 🔥 Added Here
+        },
+      },
     });
 
   } catch (err) {
     next(err);
   }
 };
+
 
 exports.updateProject = async (req, res, next) => {
   try {
