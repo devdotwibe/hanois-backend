@@ -1006,3 +1006,84 @@ exports.deleteProposalAttachment = async (req, res, next) => {
     return errorResponse(res, error.message || "Internal server error", 500);
   }
 };
+
+
+// ========================= ACCEPT PROPOSAL =========================
+exports.acceptProposal = async (req, res, next) => {
+  try {
+    const proposalId = req.params.id;
+    const provider_id = req.user?.id;
+
+    if (!proposalId) {
+      return errorResponse(res, "Proposal ID is required", 400);
+    }
+
+    // Check if proposal belongs to provider
+    const proposal = await ProposalsModel.getById(proposalId);
+
+    if (!proposal) {
+      return errorResponse(res, "Proposal not found", 404);
+    }
+
+    if (proposal.provider_id !== provider_id) {
+      return errorResponse(res, "Not authorized to accept this proposal", 403);
+    }
+
+    // Accept the proposal
+    const result = await pool.query(
+      `
+      UPDATE proposals
+      SET is_accepted = TRUE
+      WHERE id = $1
+      RETURNING *;
+      `,
+      [proposalId]
+    );
+
+    return successResponse(res, result.rows[0], "Proposal accepted successfully");
+
+  } catch (error) {
+    console.error("🔥 Accept Proposal Error:", error);
+    return errorResponse(res, "Internal server error", 500);
+  }
+};
+
+// ========================= REJECT PROPOSAL =========================
+exports.rejectProposal = async (req, res, next) => {
+  try {
+    const proposalId = req.params.id;
+    const provider_id = req.user?.id;
+
+    if (!proposalId) {
+      return errorResponse(res, "Proposal ID is required", 400);
+    }
+
+    // Check if proposal belongs to provider
+    const proposal = await ProposalsModel.getById(proposalId);
+
+    if (!proposal) {
+      return errorResponse(res, "Proposal not found", 404);
+    }
+
+    if (proposal.provider_id !== provider_id) {
+      return errorResponse(res, "Not authorized to reject this proposal", 403);
+    }
+
+    // Reject the proposal
+    const result = await pool.query(
+      `
+      UPDATE proposals
+      SET is_accepted = FALSE
+      WHERE id = $1
+      RETURNING *;
+      `,
+      [proposalId]
+    );
+
+    return successResponse(res, result.rows[0], "Proposal rejected successfully");
+
+  } catch (error) {
+    console.error("🔥 Reject Proposal Error:", error);
+    return errorResponse(res, "Internal server error", 500);
+  }
+};

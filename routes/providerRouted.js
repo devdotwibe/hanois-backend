@@ -80,6 +80,20 @@ router.post(
   updateProposal
 );
 
+router.post(
+  "/proposal/:id/accept",
+  authenticateToken,
+  acceptProposal
+);
+
+router.post(
+  "/proposal/:id/reject",
+  authenticateToken,
+  rejectProposal
+);
+
+
+
 // DELETE ATTACHMENT (must be BEFORE wildcard)
 router.delete(
   "/delete-proposal-attachment/:id",
