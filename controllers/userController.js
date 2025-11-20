@@ -601,7 +601,6 @@ exports.getPublicProjects = async (req, res, next) => {
     });
   }
 };
-
 exports.getProjectById = async (req, res, next) => {
   try {
     const projectId = req.params.id;
@@ -671,7 +670,7 @@ exports.getProjectById = async (req, res, next) => {
       attachments = attachResult.rows;
     }
 
-    // 7. FETCH PROVIDERS for these proposals
+    // 7. FETCH PROVIDERS using provider_id from proposals
     const providerIds = [
       ...new Set(
         proposals
