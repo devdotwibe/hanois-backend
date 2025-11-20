@@ -9,59 +9,19 @@ exports.shorthands = undefined;
  * @param {import('node-pg-migrate').MigrationBuilder} pgm
  */
 exports.up = (pgm) => {
-  pgm.createTable('proposals', {
+  pgm.createTable('proposal_attachments', {
     id: 'id', // auto increment primary key
 
-    user_id: {
+    proposal_id: {
       type: 'integer',
-      notNull: false,
-      references: '"users"',
+      notNull: true,
+      references: '"proposals"',
       onDelete: 'CASCADE'
-    },
-
-    provider_id: {
-      type: 'integer',
-      notNull: false,
-      references: '"providers"',
-      onDelete: 'CASCADE'
-    },
-
-    work_id: {
-      type: 'integer',
-      notNull: false,
-      references: '"work"',
-      onDelete: 'CASCADE'
-    },
-
-    title: {
-      type: 'text',
-      notNull: false
-    },
-
-    budget: {
-      type: 'text',
-      notNull: false
-    },
-
-    timeline: {
-      type: 'text',
-      notNull: false
-    },
-
-    description: {
-      type: 'text',
-      notNull: false
     },
 
     attachment: {
-      type: 'text', // will store file path or file name
-      notNull: false
-    },
-
-    status: {
-      type: 'text',
-      notNull: false,
-      default: 'sent'
+      type: 'text', // stores file path or filename
+      notNull: true
     },
 
     created_at: {
@@ -69,16 +29,11 @@ exports.up = (pgm) => {
       default: pgm.func('current_timestamp')
     }
   });
-
-  // Optional → prevent multiple proposals from same provider for same work
-  pgm.addConstraint('proposals', 'unique_provider_proposal_on_work', {
-    unique: ['provider_id', 'work_id']
-  });
 };
 
 /**
  * @param {import('node-pg-migrate').MigrationBuilder} pgm
  */
 exports.down = (pgm) => {
-  pgm.dropTable('proposals');
+  pgm.dropTable('proposal_attachments');
 };

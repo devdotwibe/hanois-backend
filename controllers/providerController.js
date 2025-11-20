@@ -828,13 +828,11 @@ exports.getLeadWorkIds = async (req, res) => {
   }
 };
 
-
-
 exports.createProposal = async (req, res, next) => {
   try {
     const provider_id = req.user?.id; // provider logged in
 
-    // 🔥 READ TEXT FIELDS (sent via form-data)
+    // READ TEXT FIELDS
     const {
       user_id,
       work_id,
@@ -844,20 +842,20 @@ exports.createProposal = async (req, res, next) => {
       description
     } = req.body;
 
-    // 🔥 READ FILE (multer stores file info here)
-    const attachment = req.file ? req.file.filename : null;
+    // READ MULTIPLE FILES (stored by multer)
+    const files = req.files || [];
 
     if (!provider_id || !user_id || !work_id) {
       return errorResponse(res, "Missing required fields", 400);
     }
 
-    // Prevent duplicate proposal for same work_id
+    // Prevent duplicate proposal for same provider + work
     const exists = await ProposalsModel.checkExisting(provider_id, work_id);
     if (exists) {
       return errorResponse(res, "Proposal already submitted for this project", 409);
     }
 
-    // 🔥 SAVE TO DATABASE
+    // SAVE BASE PROPOSAL (NO attachment here)
     const newProposal = await ProposalsModel.createProposal({
       user_id,
       provider_id,
@@ -866,15 +864,21 @@ exports.createProposal = async (req, res, next) => {
       budget,
       timeline,
       description,
-      attachment   // <-- file path stored here
+      attachment: null // no single attachment anymore
     });
 
+    // SAVE MULTIPLE ATTACHMENTS INTO proposal_attachments TABLE
+    for (const file of files) {
+      await ProposalAttachmentsModel.addAttachment(newProposal.id, file.filename);
+    }
+
     return successResponse(res, newProposal, "Proposal sent successfully");
+
   } catch (err) {
+    console.error("❌ Create Proposal Error:", err);
     next(err);
   }
 };
-
 
 exports.getProposalById = async (req, res, next) => {
   try {
@@ -884,7 +888,7 @@ exports.getProposalById = async (req, res, next) => {
       return errorResponse(res, "Proposal ID is required", 400);
     }
 
-    // Fetch proposal
+    // Fetch proposal from main table
     const proposal = await ProposalsModel.getById(proposal_id);
 
     if (!proposal) {
@@ -894,10 +898,18 @@ exports.getProposalById = async (req, res, next) => {
     // Fetch user info
     const user = await UsersModel.findById(proposal.user_id);
 
-    return successResponse(res, {
-      ...proposal,
-      user: user || null
-    }, "Proposal retrieved successfully");
+    // Fetch attachments
+    const attachments = await ProposalAttachmentsModel.getAttachments(proposal_id);
+
+    return successResponse(
+      res,
+      {
+        ...proposal,
+        user: user || null,
+        attachments: attachments || []
+      },
+      "Proposal retrieved successfully"
+    );
 
   } catch (err) {
     console.error("Error in getProposalById:", err);
@@ -912,34 +924,35 @@ exports.updateProposal = async (req, res, next) => {
 
     const { title, budget, timeline, description } = req.body;
 
+    // Check if proposal belongs to provider
     const check = await pool.query(
       `SELECT * FROM proposals WHERE id = $1 AND provider_id = $2`,
       [proposalId, provider_id]
     );
 
     if (check.rows.length === 0) {
-      return errorResponse(res, "Proposal not found", 404);
+      return errorResponse(res, "Proposal not found or not owned by you", 404);
     }
 
-    let attachment = check.rows[0].attachment;
-
-    if (req.file) {
-      attachment = req.file.filename;
-    }
-
-   await pool.query(
+    // Update proposal fields (NO attachment here anymore)
+    await pool.query(
       `
       UPDATE proposals
       SET 
         title = $1,
         budget = $2,
         timeline = $3,
-        description = $4,
-        attachment = $5
-      WHERE id = $6 AND provider_id = $7
+        description = $4
+      WHERE id = $5 AND provider_id = $6
       `,
-      [title, budget, timeline, description, attachment, proposalId, provider_id]
+      [title, budget, timeline, description, proposalId, provider_id]
     );
+
+    // Save new MULTIPLE attachments (if any)
+    const files = req.files || [];
+    for (const file of files) {
+      await ProposalAttachmentsModel.addAttachment(proposalId, file.filename);
+    }
 
     return successResponse(res, null, "Proposal updated successfully");
 

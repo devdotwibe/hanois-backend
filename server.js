@@ -53,6 +53,16 @@ const designRoutes = require('./routes/designRoutes');
 
 
 const projectUploadDir = path.join(__dirname, 'public/uploads/projects');
+
+const proposalDir = path.join(__dirname, 'public/proposals');
+if (!fs.existsSync(proposalDir)) {
+  fs.mkdirSync(proposalDir, { recursive: true });
+  console.log('📁 Created /public/proposals directory automatically');
+}
+
+
+
+
 if (!fs.existsSync(projectUploadDir)) {
   fs.mkdirSync(projectUploadDir, { recursive: true });
   console.log('✅ Created /public/uploads/projects directory automatically');
@@ -100,6 +110,7 @@ app.use('/api/projects', projectRoutes);
 
 app.use('/api/project-images', projectImageRoutes);
 
+app.use('/proposals', express.static(proposalDir));
 
 
 app.get('/', (req, res) => {

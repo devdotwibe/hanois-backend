@@ -6,15 +6,17 @@ const multer = require("multer");
 const path = require("path");
 
 const proposalStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "../public/banner")); // SAME PATH
-  },
+destination: (req, file, cb) => {
+  cb(null, path.join(__dirname, "../public/proposals")); 
+},
+
   filename: (req, file, cb) => {
     const uniqueName = Date.now() + "_" + Math.round(Math.random() * 1e9);
     cb(null, uniqueName + path.extname(file.originalname));
   }
 });
 
+// Unlimited files allowed for "attachments"
 const uploadProposal = multer({ storage: proposalStorage });
 // ========================================================================
 
@@ -36,7 +38,7 @@ const {
   // PROPOSALS
   createProposal,
   getProposalById,
-   updateProposal             // <=== IMPORTANT
+  updateProposal
 } = require('../controllers/providerController');
 
 const { providerValidation } = require('../middleware/validation');
@@ -59,24 +61,27 @@ router.post("/update-lead", authenticateToken, updateLead);
 router.get("/lead-work-ids", authenticateToken, getLeadWorkIds);
 
 // ========================= PROPOSALS =========================
+
+// CREATE proposal – unlimited attachments
 router.post(
   "/send-proposal",
   authenticateToken,
-  uploadProposal.single("attachment"),
+  uploadProposal.array("attachments"), // unlimited files
   createProposal
 );
 
-// ⭐⭐ NEW ROUTE — View Proposal (must be before :id route)
+// VIEW proposal
 router.get(
   "/view-proposal/:id",
   authenticateToken,
   getProposalById
 );
 
+// UPDATE proposal – unlimited attachments
 router.post(
   "/update-proposal/:id",
   authenticateToken,
-  uploadProposal.single("attachment"),  // file upload support
+  uploadProposal.array("attachments"), // unlimited files
   updateProposal
 );
 
