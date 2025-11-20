@@ -84,6 +84,10 @@ router.post(
 router.delete(
   "/delete-proposal-attachment/:id",
   authenticateToken,
+  (req,res,next) => { 
+     console.log("🔥 DELETE route matched:", req.params.id);
+     next();
+  },
   deleteProposalAttachment
 );
 
