@@ -460,73 +460,79 @@ exports.getMyProjects = async (req, res, next) => {
 
 exports.getPublicProjects = async (req, res, next) => {
   try {
-    const { search, services } = req.query;
+    const { search, serviceIds } = req.query;
 
-    // Convert services to array of numbers if present
-    let serviceFilter = [];
-    if (services) {
-      serviceFilter = services.split(",").map(Number); // "1,5,7" → [1,5,7]
-    }
-
-    const result = await pool.query(`
-      SELECT * FROM work 
-      WHERE listing_style = 'public'
-      ORDER BY id DESC
-    `);
-
+    // 1. Fetch all PUBLIC projects
+    const result = await pool.query(
+      "SELECT * FROM work WHERE listing_style = 'public' ORDER BY id DESC"
+    );
     let projects = result.rows;
 
-    // Fetch Meta Tables
+    if (!projects.length) {
+      return res.json({ success: true, data: [] });
+    }
+
+    // 2. Extract ALL unique user_ids
     const userIds = [...new Set(projects.map(p => p.user_id).filter(Boolean))];
+
+    // 3. Fetch users
     const users = await UsersModel.findByIds(userIds);
     const userMap = {};
     users.forEach(u => (userMap[u.id] = u));
 
+    // 4. Fetch categories
     const { rows: categories } = await pool.query("SELECT * FROM categories");
     const categoryMap = {};
     categories.forEach(c => (categoryMap[c.id] = c));
 
-    const { rows: servicesRows } = await pool.query("SELECT * FROM services");
+    // 5. Fetch services
+    const { rows: services } = await pool.query("SELECT * FROM services");
     const serviceMap = {};
-    servicesRows.forEach(s => (serviceMap[s.id] = s));
+    services.forEach(s => (serviceMap[s.id] = s));
 
+    // 6. Fetch design (luxury levels)
     const { rows: designs } = await pool.query("SELECT * FROM design");
     const designMap = {};
     designs.forEach(d => (designMap[d.id] = d));
 
-    // Build final projects
+    // 7. Build the full project objects with joins
     let finalProjects = projects.map(p => ({
       ...p,
       user: userMap[p.user_id] || null,
       category: categoryMap[p.project_type] || null,
       service_list: p.service_ids ? p.service_ids.map(id => serviceMap[id]) : [],
-      luxury_level_details: designMap[p.luxury_level] || null
+      luxury_level_details: designMap[p.luxury_level] || null,
     }));
 
-
-    // 🔍 **Search Filter**
+    // 8. Apply search filter if present
     if (search && search.trim()) {
-      const s = search.toLowerCase();
-      finalProjects = finalProjects.filter(p => {
-        return (
-          p.title?.toLowerCase().includes(s) ||
-          p.location?.toLowerCase().includes(s) ||
-          p.land_size?.toLowerCase().includes(s) ||
-          p.user?.name?.toLowerCase().includes(s) ||
-          p.category?.name?.toLowerCase().includes(s) ||
-          p.luxury_level_details?.name?.toLowerCase().includes(s) ||
-          p.service_list.some(serv => serv?.name?.toLowerCase().includes(s))
-        );
-      });
-    }
-
-    // 🎯 **Service Filter**
-    if (serviceFilter.length > 0) {
-      finalProjects = finalProjects.filter(p =>
-        p.service_list.some(serv => serviceFilter.includes(serv.id))
+      const searchLower = search.trim().toLowerCase();
+      finalProjects = finalProjects.filter(p => 
+        (p.title && p.title.toLowerCase().includes(searchLower)) ||
+        (p.location && p.location.toLowerCase().includes(searchLower)) ||
+        (p.land_size && p.land_size.toLowerCase().includes(searchLower)) ||
+        (p.user && p.user.name && p.user.name.toLowerCase().includes(searchLower)) ||
+        (p.category && p.category.name && p.category.name.toLowerCase().includes(searchLower)) ||
+        (p.luxury_level_details && p.luxury_level_details.name && p.luxury_level_details.name.toLowerCase().includes(searchLower)) ||
+        (p.service_list && p.service_list.some(s => s.name && s.name.toLowerCase().includes(searchLower)))
       );
     }
 
+    // 9. Filter projects by provided service IDs, if any
+    if (serviceIds) {
+      const filterIds = serviceIds
+        .split(",")
+        .map(id => Number(id))
+        .filter(Boolean);
+      if (filterIds.length > 0) {
+        finalProjects = finalProjects.filter(p =>
+          p.service_list &&
+          p.service_list.some(s => filterIds.includes(s.id))
+        );
+      }
+    }
+
+    // Return filtered projects
     return res.json({ success: true, data: finalProjects });
   } catch (err) {
     next(err);
