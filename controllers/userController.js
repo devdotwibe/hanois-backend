@@ -462,6 +462,7 @@ exports.getPublicProjects = async (req, res, next) => {
   try {
     const search = req.query.search ? req.query.search.toLowerCase() : "";
 
+    // --- BASIC SQL SEARCH (title, notes, location, land_size) ---
     let baseQuery = `
       SELECT * FROM work 
       WHERE listing_style = 'public'
@@ -486,10 +487,12 @@ exports.getPublicProjects = async (req, res, next) => {
     const result = await pool.query(baseQuery, params);
     let projects = result.rows;
 
+    // If no rows from SQL, still return empty (frontend OK)
     if (!projects.length) {
       return res.json({ success: true, data: [] });
     }
 
+    // --- FETCH META ---
     const userIds = [...new Set(projects.map((p) => p.user_id).filter(Boolean))];
     const users = await UsersModel.findByIds(userIds);
     const userMap = {};
@@ -507,7 +510,7 @@ exports.getPublicProjects = async (req, res, next) => {
     const designMap = {};
     designs.forEach((d) => (designMap[d.id] = d));
 
-    // Attach meta to each project
+    // --- BUILD FINAL PROJECTS ---
     let finalProjects = projects.map((p) => ({
       ...p,
       user: userMap[p.user_id] || null,
@@ -516,15 +519,15 @@ exports.getPublicProjects = async (req, res, next) => {
       luxury_level_details: designMap[p.luxury_level] || null,
     }));
 
-
+    // --- ADVANCED SEARCH ON META FIELDS ---
     if (search) {
       finalProjects = finalProjects.filter((p) => {
+        const uName = p.user?.name?.toLowerCase() || "";
         const serviceNames = p.service_list?.map((s) => s.name.toLowerCase()) || [];
         const luxuryName = p.luxury_level_details?.name?.toLowerCase() || "";
-        const userName = p.user?.name?.toLowerCase() || "";
 
         return (
-          userName.includes(search) ||
+          uName.includes(search) ||
           serviceNames.some((s) => s.includes(search)) ||
           luxuryName.includes(search)
         );
