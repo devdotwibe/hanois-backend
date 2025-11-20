@@ -601,6 +601,7 @@ exports.getPublicProjects = async (req, res, next) => {
     });
   }
 };
+
 exports.getProjectById = async (req, res, next) => {
   try {
     const projectId = req.params.id;
@@ -670,60 +671,15 @@ exports.getProjectById = async (req, res, next) => {
       attachments = attachResult.rows;
     }
 
-    // 7. FETCH PROVIDERS for these proposals
-    const providerIds = [
-      ...new Set(
-        proposals
-          .map((p) => p.provider_id)
-          .filter((id) => id !== null && id !== undefined)
-      ),
-    ];
-
-    let providerMap = {};
-    if (providerIds.length > 0) {
-      const providersResult = await pool.query(
-        `
-        SELECT
-          id,
-          name,
-          email,
-          phone,
-          location,
-          team_size,
-          service,
-          website,
-          social_media,
-          notes,
-          facebook,
-          instagram,
-          other_link,
-          professional_headline,
-          image,
-          categories_id,
-          service_id,
-          created_at
-        FROM providers
-        WHERE id = ANY($1)
-        `,
-        [providerIds]
-      );
-
-      providerMap = providersResult.rows.reduce((acc, provider) => {
-        acc[provider.id] = provider;
-        return acc;
-      }, {});
-    }
-
-    // 8. Merge attachments + provider into proposals
+    // 7. Merge attachments with proposals
     const proposalsWithAttachments = proposals.map((proposal) => ({
       ...proposal,
       attachments: attachments.filter(
         (a) => a.proposal_id === proposal.id
       ),
-      provider: providerMap[proposal.provider_id] || null,
     }));
 
-    // 9. SEND FINAL RESPONSE
+    // 8. SEND FINAL RESPONSE
     return res.json({
       success: true,
       data: {
@@ -732,7 +688,7 @@ exports.getProjectById = async (req, res, next) => {
           category: category.rows[0] || null,
           luxury_level_details: luxury.rows[0] || null,
           service_list,
-          proposals: proposalsWithAttachments,
+          proposals: proposalsWithAttachments,   // 🔥 Added Here
         },
       },
     });
@@ -741,7 +697,6 @@ exports.getProjectById = async (req, res, next) => {
     next(err);
   }
 };
-
 
 
 exports.updateProject = async (req, res, next) => {
