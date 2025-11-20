@@ -38,7 +38,9 @@ const {
   createProposal,
   getProposalById,
   updateProposal,
-  deleteProposalAttachment
+  deleteProposalAttachment,
+   acceptProposal,     // ✅ ADD
+  rejectProposal      // ✅ ADD
 } = require('../controllers/providerController');
 
 const { providerValidation } = require('../middleware/validation');
