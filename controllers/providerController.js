@@ -1025,9 +1025,7 @@ exports.acceptProposal = async (req, res, next) => {
       return errorResponse(res, "Proposal not found", 404);
     }
 
-    if (proposal.provider_id !== provider_id) {
-      return errorResponse(res, "Not authorized to accept this proposal", 403);
-    }
+   
 
     // Accept the proposal
     const result = await pool.query(
@@ -1065,9 +1063,6 @@ exports.rejectProposal = async (req, res, next) => {
       return errorResponse(res, "Proposal not found", 404);
     }
 
-    if (proposal.provider_id !== provider_id) {
-      return errorResponse(res, "Not authorized to reject this proposal", 403);
-    }
 
     // Reject the proposal
     const result = await pool.query(
