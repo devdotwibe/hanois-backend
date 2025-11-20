@@ -575,8 +575,7 @@ exports.getAllProviderServices = async (req, res, next) => {
       details: err.message,
     });
   }
-};
-exports.getLeads = async (req, res) => {
+};exports.getLeads = async (req, res) => {
   try {
     const providerId = req.user?.id;
 
@@ -584,7 +583,7 @@ exports.getLeads = async (req, res) => {
       return res.status(400).json({ success: false, error: "Provider ID not found" });
     }
 
-    // 1️⃣ System Leads (work table)
+    // 1️⃣ System Leads
     const workQuery = `
       SELECT *,
       created_at AS system_created_at
@@ -593,46 +592,38 @@ exports.getLeads = async (req, res) => {
     `;
     const { rows: systemLeads } = await pool.query(workQuery, [providerId]);
 
-    // 2️⃣ Manual Leads (leads + work join)
-const manualLeadQuery = `
-  SELECT 
-    w.*,
-    l.id AS lead_id,
-    l.status AS lead_status,
-    l.description AS lead_description,
-    l.created_at AS lead_created_at,
+    // 2️⃣ Manual Leads
+    const manualLeadQuery = `
+      SELECT 
+        w.*,
+        l.id AS lead_id,
+        l.status AS lead_status,
+        l.description AS lead_description,
+        l.created_at AS lead_created_at,
 
-    -- 🚀 proposal fields added
-    p.id AS proposal_id,
-    p.status AS proposal_status
-
-  FROM leads l
-  JOIN work w ON w.id = l.work_id
-  LEFT JOIN proposals p 
-      ON p.work_id = w.id 
-      AND p.provider_id = $1
-
-  WHERE l.provider_id = $1
-`;
+        p.id AS proposal_id,
+        p.status AS proposal_status
+      FROM leads l
+      JOIN work w ON w.id = l.work_id
+      LEFT JOIN proposals p 
+          ON p.work_id = w.id 
+          AND p.provider_id = $1
+      WHERE l.provider_id = $1
+    `;
 
     const { rows: manualLeads } = await pool.query(manualLeadQuery, [providerId]);
 
-    // 3️⃣ Merge without overwriting work table fields
+    // 3️⃣ Merge
     const map = new Map();
-
-    // → First insert system leads
     systemLeads.forEach(sys => map.set(sys.id, { ...sys, lead_id: null }));
-
-    // → Then insert manual leads (adds lead fields)
     manualLeads.forEach(man => map.set(man.id, { ...map.get(man.id), ...man }));
-
     const allLeads = Array.from(map.values());
 
     if (allLeads.length === 0) {
       return res.json({ success: true, data: [] });
     }
 
-    // 4️⃣ Sort (latest first)
+    // 4️⃣ Sort leads
     allLeads.sort((a, b) => {
       const A = a.lead_created_at || a.system_created_at || a.created_at;
       const B = b.lead_created_at || b.system_created_at || b.created_at;
@@ -642,6 +633,7 @@ const manualLeadQuery = `
     // 5️⃣ Load related tables
     const userIds = [...new Set(allLeads.map(w => w.user_id).filter(Boolean))];
     const users = await UsersModel.findByIds(userIds);
+
     const userMap = {};
     users.forEach(u => (userMap[u.id] = u));
 
@@ -653,31 +645,65 @@ const manualLeadQuery = `
     const designMap = {};
     designList.forEach(d => (designMap[d.id] = d));
 
-    // 6️⃣ Build final response
+    // ⭐ 6️⃣ Collect ALL proposal_ids
+    const proposalIds = allLeads
+      .map(i => i.proposal_id)
+      .filter(id => id !== null);
+
+    // ⭐ 7️⃣ Load full proposal details (attachments + provider + is_accepted)
+    let proposalDetailsMap = {};
+
+    if (proposalIds.length > 0) {
+      const { rows: proposals } = await pool.query(
+        `
+          SELECT 
+            p.*,
+
+            -- attachments array
+            (
+              SELECT json_agg(a.*)
+              FROM proposal_attachments a
+              WHERE a.proposal_id = p.id
+            ) AS attachments,
+
+            -- provider details
+            (
+              SELECT row_to_json(pr)
+              FROM providers pr
+              WHERE pr.id = p.provider_id
+            ) AS provider
+
+          FROM proposals p
+          WHERE p.id = ANY($1)
+        `,
+        [proposalIds]
+      );
+
+      proposals.forEach(p => {
+        proposalDetailsMap[p.id] = p;
+      });
+    }
+
+    // ⭐ 8️⃣ Build final response with merged proposal_details
     const finalList = allLeads.map(w => ({
       ...w,
 
-      // Attach user & category
       user: userMap[w.user_id] || null,
       category: categoryMap[w.project_type] || null,
 
-      // Manual lead fields
       lead_id: w.lead_id || null,
-    status: w.status,   
+      status: w.status,
       proposal_note: w.lead_description ?? "",
       lead_created_at: w.lead_created_at || null,
 
+      proposal_id: w.proposal_id || null,
+      proposal_status: w.proposal_status || null,
+      proposal_details: proposalDetailsMap[w.proposal_id] || null,
 
-        proposal_id: w.proposal_id || null,
-  proposal_status: w.proposal_status || null,
-
-
-      // Luxury type
       luxury_level: w.luxury_level,
       luxury_level_details: designMap[w.luxury_level] || null,
       luxury_type: designMap[w.luxury_level]?.name || null,
 
-      // Lead source
       lead_source: w.lead_id ? "manual" : "system"
     }));
 
@@ -688,6 +714,7 @@ const manualLeadQuery = `
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
+
 
 
 exports.addLead = async (req, res) => {
