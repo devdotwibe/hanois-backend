@@ -16,7 +16,6 @@ const proposalStorage = multer.diskStorage({
   }
 });
 
-// Unlimited files allowed for "attachments"
 const uploadProposal = multer({ storage: proposalStorage });
 // ========================================================================
 
@@ -39,12 +38,11 @@ const {
   createProposal,
   getProposalById,
   updateProposal,
-  deleteProposalAttachment   // 👈 ADD THIS
+  deleteProposalAttachment
 } = require('../controllers/providerController');
 
 const { providerValidation } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
-
 
 // ========================= AUTH =========================
 router.post('/register', providerValidation, registerProvider);
@@ -62,8 +60,6 @@ router.post("/update-lead", authenticateToken, updateLead);
 router.get("/lead-work-ids", authenticateToken, getLeadWorkIds);
 
 // ========================= PROPOSALS =========================
-
-// CREATE proposal – unlimited attachments
 router.post(
   "/send-proposal",
   authenticateToken,
@@ -71,14 +67,12 @@ router.post(
   createProposal
 );
 
-// VIEW proposal
 router.get(
   "/view-proposal/:id",
   authenticateToken,
   getProposalById
 );
 
-// UPDATE proposal – unlimited attachments
 router.post(
   "/update-proposal/:id",
   authenticateToken,
@@ -86,13 +80,12 @@ router.post(
   updateProposal
 );
 
-// ❌ DELETE SINGLE ATTACHMENT
+// DELETE ATTACHMENT (must be BEFORE wildcard)
 router.post(
   "/delete-proposal-attachment/:id",
   authenticateToken,
   deleteProposalAttachment
 );
-
 
 // ========================= PROFILE =========================
 router.put('/update-profile/:providerId', authenticateToken, updateProviderProfile);
@@ -101,7 +94,7 @@ router.put('/update-profile/:providerId', authenticateToken, updateProviderProfi
 router.put('/:id', authenticateToken, updateProvider);
 router.delete('/:id', authenticateToken, deleteProvider);
 
-// ========================= SINGLE PROVIDER =========================
+// ========================= SINGLE PROVIDER (MUST BE LAST) =========================
 router.get('/:id', authenticateToken, getProviderById);
 
 module.exports = router;
