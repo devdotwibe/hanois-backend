@@ -467,29 +467,29 @@ exports.getPublicProjects = async (req, res, next) => {
       WHERE listing_style = 'public'
     `;
 
-    let queryParams = [];
+    let params = [];
 
     if (search) {
       baseQuery += `
         AND (
           LOWER(title) LIKE $1 OR
           LOWER(notes) LIKE $1 OR
-          LOWER(location) LIKE $1
+          LOWER(location) LIKE $1 OR
+          LOWER(land_size) LIKE $1
         )
       `;
-      queryParams.push(`%${search}%`);
+      params.push(`%${search}%`);
     }
 
     baseQuery += ` ORDER BY id DESC`;
 
-    const result = await pool.query(baseQuery, queryParams);
-    const projects = result.rows;
+    const result = await pool.query(baseQuery, params);
+    let projects = result.rows;
 
     if (!projects.length) {
       return res.json({ success: true, data: [] });
     }
 
-    // Fetch meta like before:
     const userIds = [...new Set(projects.map((p) => p.user_id).filter(Boolean))];
     const users = await UsersModel.findByIds(userIds);
     const userMap = {};
@@ -507,17 +507,32 @@ exports.getPublicProjects = async (req, res, next) => {
     const designMap = {};
     designs.forEach((d) => (designMap[d.id] = d));
 
-    const finalProjects = projects.map((p) => ({
+    // Attach meta to each project
+    let finalProjects = projects.map((p) => ({
       ...p,
       user: userMap[p.user_id] || null,
       category: categoryMap[p.project_type] || null,
-      service_list: p.service_ids
-        ? p.service_ids.map((id) => serviceMap[id])
-        : [],
+      service_list: p.service_ids ? p.service_ids.map((id) => serviceMap[id]) : [],
       luxury_level_details: designMap[p.luxury_level] || null,
     }));
 
+
+    if (search) {
+      finalProjects = finalProjects.filter((p) => {
+        const serviceNames = p.service_list?.map((s) => s.name.toLowerCase()) || [];
+        const luxuryName = p.luxury_level_details?.name?.toLowerCase() || "";
+        const userName = p.user?.name?.toLowerCase() || "";
+
+        return (
+          userName.includes(search) ||
+          serviceNames.some((s) => s.includes(search)) ||
+          luxuryName.includes(search)
+        );
+      });
+    }
+
     return res.json({ success: true, data: finalProjects });
+
   } catch (err) {
     next(err);
   }
