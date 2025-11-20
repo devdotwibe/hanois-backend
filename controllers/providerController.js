@@ -13,6 +13,8 @@ const UsersModel = require('../models/usersModel');
 const LeadsModel = require('../models/LeadsModel');
 
 const ProposalsModel = require("../models/proposalsModel");
+const ProposalAttachmentsModel = require("../models/ProposalAttachmentsModel");
+
 
 
 
