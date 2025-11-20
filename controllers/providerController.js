@@ -16,7 +16,8 @@ const ProposalsModel = require("../models/proposalsModel");
 const ProposalAttachmentsModel = require("../models/ProposalAttachmentsModel");
 
 
-
+const fs = require("fs");
+const path = require("path");
 
   exports.resetPassword = async (req, res, next) => {
     try {
@@ -960,6 +961,48 @@ exports.updateProposal = async (req, res, next) => {
 
   } catch (error) {
     console.error("🔥 Update Proposal Error:", error);
+    return errorResponse(res, error.message || "Internal server error", 500);
+  }
+};
+
+
+exports.deleteProposalAttachment = async (req, res, next) => {
+  try {
+    const attachmentId = req.params.id;
+    const provider_id = req.user?.id;
+
+    if (!attachmentId) {
+      return errorResponse(res, "Attachment ID is required", 400);
+    }
+
+    // 1️⃣ Get attachment details
+    const attachment = await ProposalAttachmentsModel.getAttachmentById(attachmentId);
+
+    if (!attachment) {
+      return errorResponse(res, "Attachment not found", 404);
+    }
+
+    // 2️⃣ Check if this proposal belongs to logged-in provider
+    const proposal = await ProposalsModel.getById(attachment.proposal_id);
+
+    if (!proposal || proposal.provider_id !== provider_id) {
+      return errorResponse(res, "Not authorized to delete this file", 403);
+    }
+
+    // 3️⃣ Delete DB record
+    await ProposalAttachmentsModel.deleteAttachment(attachmentId);
+
+    // 4️⃣ Delete file from storage
+    const filePath = path.join(__dirname, "../public/proposals", attachment.attachment);
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    return successResponse(res, null, "Attachment removed successfully");
+
+  } catch (error) {
+    console.error("🔥 Delete Proposal Attachment Error:", error);
     return errorResponse(res, error.message || "Internal server error", 500);
   }
 };

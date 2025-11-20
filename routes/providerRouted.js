@@ -6,9 +6,9 @@ const multer = require("multer");
 const path = require("path");
 
 const proposalStorage = multer.diskStorage({
-destination: (req, file, cb) => {
-  cb(null, path.join(__dirname, "../public/proposals")); 
-},
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, "../public/proposals"));
+  },
 
   filename: (req, file, cb) => {
     const uniqueName = Date.now() + "_" + Math.round(Math.random() * 1e9);
@@ -38,7 +38,8 @@ const {
   // PROPOSALS
   createProposal,
   getProposalById,
-  updateProposal
+  updateProposal,
+  deleteProposalAttachment   // 👈 ADD THIS
 } = require('../controllers/providerController');
 
 const { providerValidation } = require('../middleware/validation');
@@ -66,7 +67,7 @@ router.get("/lead-work-ids", authenticateToken, getLeadWorkIds);
 router.post(
   "/send-proposal",
   authenticateToken,
-  uploadProposal.array("attachments"), // unlimited files
+  uploadProposal.array("attachments"),
   createProposal
 );
 
@@ -81,8 +82,15 @@ router.get(
 router.post(
   "/update-proposal/:id",
   authenticateToken,
-  uploadProposal.array("attachments"), // unlimited files
+  uploadProposal.array("attachments"),
   updateProposal
+);
+
+// ❌ DELETE SINGLE ATTACHMENT
+router.delete(
+  "/delete-proposal-attachment/:id",
+  authenticateToken,
+  deleteProposalAttachment
 );
 
 
