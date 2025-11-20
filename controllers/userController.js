@@ -469,6 +469,7 @@ exports.getPublicProjects = async (req, res, next) => {
 
     let params = [];
 
+    // SQL search only for fields inside work table
     if (search) {
       baseQuery += `
         AND (
@@ -490,49 +491,51 @@ exports.getPublicProjects = async (req, res, next) => {
       return res.json({ success: true, data: [] });
     }
 
-    // Fetch meta
-    const userIds = [...new Set(projects.map((p) => p.user_id).filter(Boolean))];
+    // --- META FETCHING ---
+    const userIds = [...new Set(projects.map(p => p.user_id).filter(Boolean))];
     const users = await UsersModel.findByIds(userIds);
     const userMap = {};
-    users.forEach((u) => (userMap[u.id] = u));
+    users.forEach(u => { userMap[u.id] = u });
 
     const { rows: categories } = await pool.query("SELECT * FROM categories");
     const categoryMap = {};
-    categories.forEach((c) => (categoryMap[c.id] = c));
+    categories.forEach(c => categoryMap[c.id] = c);
 
     const { rows: services } = await pool.query("SELECT * FROM services");
     const serviceMap = {};
-    services.forEach((s) => (serviceMap[s.id] = s));
+    services.forEach(s => serviceMap[s.id] = s);
 
     const { rows: designs } = await pool.query("SELECT * FROM design");
     const designMap = {};
-    designs.forEach((d) => (designMap[d.id] = d));
+    designs.forEach(d => designMap[d.id] = d);
 
-    // attach meta
-    let finalProjects = projects.map((p) => ({
+    // Build enriched objects
+    let finalProjects = projects.map(p => ({
       ...p,
       user: userMap[p.user_id] || null,
       category: categoryMap[p.project_type] || null,
-      service_list: p.service_ids ? p.service_ids.map((id) => serviceMap[id]) : [],
+      service_list: p.service_ids ? p.service_ids.map(id => serviceMap[id]) : [],
       luxury_level_details: designMap[p.luxury_level] || null,
     }));
 
-    // Extra filtering for meta fields
+    // 🔥 SECOND FILTER — AFTER META JOIN (safe)
     if (search) {
-      finalProjects = finalProjects.filter((p) => {
+      finalProjects = finalProjects.filter(p => {
+        const s = search.toLowerCase();
+
         const userName = p.user?.name?.toLowerCase() || "";
-        const serviceNames = p.service_list?.map((s) => s.name.toLowerCase()) || [];
-        const luxuryName = p.luxury_level_details?.name?.toLowerCase() || "";
+        const services = p.service_list?.map(x => x.name.toLowerCase()) || [];
+        const luxury = p.luxury_level_details?.name?.toLowerCase() || "";
 
         return (
-          userName.includes(search) ||
-          luxuryName.includes(search) ||
-          serviceNames.some((s) => s.includes(search))
+          userName.includes(s) ||
+          services.some(name => name.includes(s)) ||
+          luxury.includes(s)
         );
       });
     }
 
-    return res.json({ success: true, data: finalProjects });
+    res.json({ success: true, data: finalProjects });
 
   } catch (err) {
     next(err);
