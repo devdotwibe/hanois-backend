@@ -671,7 +671,7 @@ exports.getProjectById = async (req, res, next) => {
       attachments = attachResult.rows;
     }
 
-    // 7. FETCH PROVIDERS for these proposals (using provider_id)
+    // 7. FETCH PROVIDERS for these proposals
     const providerIds = [
       ...new Set(
         proposals
@@ -742,7 +742,6 @@ exports.getProjectById = async (req, res, next) => {
     next(err);
   }
 };
-
 
 exports.updateProject = async (req, res, next) => {
   try {
