@@ -62,7 +62,7 @@ const config = {
     username: process.env.MAIL_USERNAME,
     password: process.env.MAIL_PASSWORD,
     fromAddress: process.env.MAIL_FROM_ADDRESS,
-    fromName: process.env.MAIL_FROM_NAME || "Hanois Contact Form",
+    fromName: process.env.MAIL_FROM_NAME || "Handis Contact Form",
       adminEmail: process.env.ADMIN_EMAIL, // 👈 added line
   },
 };
