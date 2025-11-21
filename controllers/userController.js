@@ -517,8 +517,7 @@ exports.getMyProjects = async (req, res, next) => {
 
 exports.getPublicProjects = async (req, res, next) => {
   try {
-    const { search, serviceIds } = req.query;
-    console.log("Backend received query params:", req.query);
+    const { search } = req.query;
 
     // 1. Fetch all PUBLIC projects
     const result = await pool.query(
@@ -553,7 +552,7 @@ exports.getPublicProjects = async (req, res, next) => {
     const designMap = {};
     designs.forEach(d => (designMap[d.id] = d));
 
-    // 7. Build the full project objects with joins
+    // 7. Build full response objects with joined fields
     let finalProjects = projects.map(p => ({
       ...p,
       user: userMap[p.user_id] || null,
@@ -562,47 +561,29 @@ exports.getPublicProjects = async (req, res, next) => {
       luxury_level_details: designMap[p.luxury_level] || null,
     }));
 
-    // 8. Apply search filter if present
+    // 8. Apply search filter, if any
     if (search && search.trim()) {
       const searchLower = search.trim().toLowerCase();
-      finalProjects = finalProjects.filter(p => 
-        (p.title && p.title.toLowerCase().includes(searchLower)) ||
-        (p.location && p.location.toLowerCase().includes(searchLower)) ||
-        (p.land_size && p.land_size.toLowerCase().includes(searchLower)) ||
-        (p.user && p.user.name && p.user.name.toLowerCase().includes(searchLower)) ||
-        (p.category && p.category.name && p.category.name.toLowerCase().includes(searchLower)) ||
-        (p.luxury_level_details && p.luxury_level_details.name && p.luxury_level_details.name.toLowerCase().includes(searchLower)) ||
-        (p.service_list && p.service_list.some(s => s.name && s.name.toLowerCase().includes(searchLower)))
-      );
-    }
-
-    // 9. Filter projects by provided service IDs, if any
-    if (serviceIds) {
-      const filterIds = serviceIds
-        .split(",")
-        .map(id => Number(id))
-        .filter(Boolean);
-      console.log("Filtering for service IDs:", filterIds);
-      if (filterIds.length > 0) {
-        finalProjects = finalProjects.filter(p =>
-          p.service_list &&
-          p.service_list.some(s => filterIds.includes(s.id))
+      finalProjects = finalProjects.filter(p => {
+        return (
+          (p.title && p.title.toLowerCase().includes(searchLower)) ||
+          (p.location && p.location.toLowerCase().includes(searchLower)) ||
+          (p.land_size && p.land_size.toLowerCase().includes(searchLower)) ||
+          (p.user && p.user.name && p.user.name.toLowerCase().includes(searchLower)) ||
+          (p.category && p.category.name && p.category.name.toLowerCase().includes(searchLower)) ||
+          (p.luxury_level_details && p.luxury_level_details.name && p.luxury_level_details.name.toLowerCase().includes(searchLower)) ||
+          (p.service_list &&
+            p.service_list.some(s => s.name && s.name.toLowerCase().includes(searchLower)))
         );
-      }
+      });
     }
 
-    // Return filtered projects
     return res.json({ success: true, data: finalProjects });
   } catch (err) {
-    console.error("Error in getPublicProjects:", err);
-
-    // Return consistent error response without breaking frontend
-    return res.status(500).json({ 
-      success: false, 
-      message: "Server error while fetching public projects" 
-    });
+    next(err);
   }
 };
+
 exports.getProjectById = async (req, res, next) => {
   try {
     const projectId = req.params.id;
