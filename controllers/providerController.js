@@ -1038,7 +1038,6 @@ exports.deleteProposalAttachment = async (req, res, next) => {
   }
 };
 
-
 // ========================= ACCEPT PROPOSAL =========================
 exports.acceptProposal = async (req, res, next) => {
   try {
@@ -1049,18 +1048,18 @@ exports.acceptProposal = async (req, res, next) => {
       return errorResponse(res, "Proposal ID is required", 400);
     }
 
-    // Check if proposal belongs to provider
+    // Check if proposal exists
     const proposal = await ProposalsModel.getById(proposalId);
 
     if (!proposal) {
       return errorResponse(res, "Proposal not found", 404);
     }
 
-    // Accept the proposal
+    // Update status to Accepted
     const result = await pool.query(
       `
       UPDATE proposals
-      SET status = 'Accepted'
+      SET proposalstatus = 'Accepted'
       WHERE id = $1
       RETURNING *;
       `,
@@ -1077,7 +1076,6 @@ exports.acceptProposal = async (req, res, next) => {
 
 
 // ========================= REJECT PROPOSAL =========================
-
 exports.rejectProposal = async (req, res, next) => {
   try {
     const proposalId = req.params.id;
@@ -1094,11 +1092,11 @@ exports.rejectProposal = async (req, res, next) => {
       return errorResponse(res, "Proposal not found", 404);
     }
 
-    // Reject the proposal
+    // Update status to Rejected
     const result = await pool.query(
       `
       UPDATE proposals
-      SET status = 'Rejected'
+      SET proposalstatus = 'Rejected'
       WHERE id = $1
       RETURNING *;
       `,
