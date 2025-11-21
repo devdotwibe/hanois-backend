@@ -743,7 +743,6 @@ exports.getProjectById = async (req, res, next) => {
     next(err);
   }
 };
-
 exports.updateProject = async (req, res, next) => {
   try {
     const projectId = req.params.id;
@@ -766,6 +765,11 @@ exports.updateProject = async (req, res, next) => {
         delete fields[key];
       }
     });
+
+    // 🔥 FIX: Convert JS array → PostgreSQL array format for service_ids
+    if (Array.isArray(fields.service_ids)) {
+      fields.service_ids = `{${fields.service_ids.join(",")}}`;
+    }
 
     // 🔥 REMOVE all non-table fields (IMPORTANT)
     delete fields.category;
