@@ -4,7 +4,7 @@ const ProposalsModel = {
 
   /** --------------------------------------------------
    *  Create a new proposal
-   *  Default status = "ProposalSent"
+   *  Default proposalstatus = "ProposalSent"
    * --------------------------------------------------*/
   async createProposal({
     user_id,
@@ -26,7 +26,7 @@ const ProposalsModel = {
         timeline,
         description,
         attachment,
-        status
+        proposalstatus
       )
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'ProposalSent')
       RETURNING *;
@@ -98,17 +98,17 @@ const ProposalsModel = {
   },
 
   /** --------------------------------------------------
-   *  UPDATE STATUS (Accepted / Rejected / Viewed)
+   *  UPDATE STATUS (ProposalSent / Viewed / Accepted / Rejected)
    * --------------------------------------------------*/
-  async updateStatus(id, status) {
+  async updateStatus(id, proposalstatus) {
     const query = `
       UPDATE proposals
-      SET status = $2
+      SET proposalstatus = $2
       WHERE id = $1
       RETURNING *;
     `;
 
-    const { rows } = await db.query(query, [id, status]);
+    const { rows } = await db.query(query, [id, proposalstatus]);
     return rows[0] || null;
   }
 };
