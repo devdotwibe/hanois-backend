@@ -518,6 +518,7 @@ exports.getMyProjects = async (req, res, next) => {
 exports.getPublicProjects = async (req, res, next) => {
   try {
     const { search, serviceIds } = req.query;
+    console.log("Backend received query params:", req.query);
 
     // 1. Fetch all PUBLIC projects
     const result = await pool.query(
@@ -581,6 +582,7 @@ exports.getPublicProjects = async (req, res, next) => {
         .split(",")
         .map(id => Number(id))
         .filter(Boolean);
+      console.log("Filtering for service IDs:", filterIds);
       if (filterIds.length > 0) {
         finalProjects = finalProjects.filter(p =>
           p.service_list &&
@@ -592,7 +594,7 @@ exports.getPublicProjects = async (req, res, next) => {
     // Return filtered projects
     return res.json({ success: true, data: finalProjects });
   } catch (err) {
-    console.error("Error in getPublicProjects:", err); // log server error
+    console.error("Error in getPublicProjects:", err);
 
     // Return consistent error response without breaking frontend
     return res.status(500).json({ 
