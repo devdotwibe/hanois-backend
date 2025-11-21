@@ -622,8 +622,6 @@ exports.getProjectById = async (req, res, next) => {
 
     const project = rows[0];
 
-    delete project.services;
-
     // 2. Fetch category
     const category = await pool.query(
       "SELECT * FROM categories WHERE id = $1",
