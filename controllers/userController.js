@@ -594,12 +594,21 @@ exports.getPublicServices = async (req, res, next) => {
       ...new Set(
         result.rows
           .map(row => row.service_ids)
-          .filter(Boolean) 
+          .filter(Boolean)
           .flat()
       )
     ];
 
-    return res.json({ success: true, data: uniqueServiceIds });
+    if (uniqueServiceIds.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const servicesResult = await pool.query(
+      "SELECT id, name FROM services WHERE id = ANY($1)",
+      [uniqueServiceIds]
+    );
+
+    return res.json({ success: true, data: servicesResult.rows });
   } catch (err) {
     next(err);
   }
