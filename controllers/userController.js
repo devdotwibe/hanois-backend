@@ -590,11 +590,16 @@ exports.getPublicServices = async (req, res, next) => {
       "SELECT service_ids FROM work WHERE listing_style = 'public'"
     );
 
-    const serviceIdsList = result.rows
-      .map(row => row.service_ids)
-      .filter(Boolean);
+    const uniqueServiceIds = [
+      ...new Set(
+        result.rows
+          .map(row => row.service_ids)
+          .filter(Boolean) 
+          .flat()
+      )
+    ];
 
-    return res.json({ success: true, data: serviceIdsList });
+    return res.json({ success: true, data: uniqueServiceIds });
   } catch (err) {
     next(err);
   }
