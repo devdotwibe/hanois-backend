@@ -40,7 +40,9 @@ const {
   updateProposal,
   deleteProposalAttachment,
    acceptProposal,     // ✅ ADD
-  rejectProposal      // ✅ ADD
+  rejectProposal,
+    viewProposalStatus
+      // ✅ ADD
 } = require('../controllers/providerController');
 
 const { providerValidation } = require('../middleware/validation');
@@ -94,6 +96,11 @@ router.post(
   rejectProposal
 );
 
+router.post(
+  "/proposal/:id/viewed",
+  authenticateToken,
+  viewProposalStatus
+);
 
 
 // DELETE ATTACHMENT (must be BEFORE wildcard)

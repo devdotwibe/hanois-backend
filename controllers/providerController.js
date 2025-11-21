@@ -1110,3 +1110,41 @@ exports.rejectProposal = async (req, res, next) => {
     return errorResponse(res, "Internal server error", 500);
   }
 };
+
+
+// ========================= VIEW PROPOSAL =========================
+exports.viewProposalStatus = async (req, res, next) => {
+  try {
+    const proposalId = req.params.id;
+
+    if (!proposalId) {
+      return errorResponse(res, "Proposal ID is required", 400);
+    }
+
+    // Check if proposal exists
+    const proposal = await ProposalsModel.getById(proposalId);
+
+    if (!proposal) {
+      return errorResponse(res, "Proposal not found", 404);
+    }
+
+    // Update status to Viewed
+    const result = await pool.query(
+      `
+      UPDATE proposals
+      SET proposalstatus = 'Viewed'
+      WHERE id = $1
+      RETURNING *;
+      `,
+      [proposalId]
+    );
+
+    return successResponse(res, result.rows[0], "Proposal marked as viewed");
+
+  } catch (error) {
+    console.error("🔥 View Proposal Error:", error);
+    return errorResponse(res, "Internal server error", 500);
+  }
+};
+
+
