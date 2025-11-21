@@ -575,7 +575,11 @@ exports.getAllProviderServices = async (req, res, next) => {
       details: err.message,
     });
   }
-};exports.getLeads = async (req, res) => {
+};
+
+
+
+exports.getLeads = async (req, res) => {
   try {
     const providerId = req.user?.id;
 
@@ -1052,13 +1056,11 @@ exports.acceptProposal = async (req, res, next) => {
       return errorResponse(res, "Proposal not found", 404);
     }
 
-   
-
     // Accept the proposal
     const result = await pool.query(
       `
       UPDATE proposals
-      SET is_accepted = TRUE
+      SET status = 'Accepted'
       WHERE id = $1
       RETURNING *;
       `,
@@ -1073,7 +1075,9 @@ exports.acceptProposal = async (req, res, next) => {
   }
 };
 
+
 // ========================= REJECT PROPOSAL =========================
+
 exports.rejectProposal = async (req, res, next) => {
   try {
     const proposalId = req.params.id;
@@ -1083,19 +1087,18 @@ exports.rejectProposal = async (req, res, next) => {
       return errorResponse(res, "Proposal ID is required", 400);
     }
 
-    // Check if proposal belongs to provider
+    // Check if proposal exists
     const proposal = await ProposalsModel.getById(proposalId);
 
     if (!proposal) {
       return errorResponse(res, "Proposal not found", 404);
     }
 
-
     // Reject the proposal
     const result = await pool.query(
       `
       UPDATE proposals
-      SET is_accepted = FALSE
+      SET status = 'Rejected'
       WHERE id = $1
       RETURNING *;
       `,

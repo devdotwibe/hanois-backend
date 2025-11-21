@@ -3,7 +3,8 @@ const db = require("../db/pool");
 const ProposalsModel = {
 
   /** --------------------------------------------------
-   *  Create a new proposal (with default is_accepted = null)
+   *  Create a new proposal
+   *  Default status = "ProposalSent"
    * --------------------------------------------------*/
   async createProposal({
     user_id,
@@ -25,9 +26,9 @@ const ProposalsModel = {
         timeline,
         description,
         attachment,
-        is_accepted
+        status
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NULL)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'ProposalSent')
       RETURNING *;
     `;
 
@@ -47,7 +48,7 @@ const ProposalsModel = {
   },
 
   /** --------------------------------------------------
-   *  Check if proposal exists for provider + work
+   *  Check if a proposal already exists
    * --------------------------------------------------*/
   async checkExisting(provider_id, work_id) {
     const query = `
@@ -97,19 +98,17 @@ const ProposalsModel = {
   },
 
   /** --------------------------------------------------
-   *  UPDATE ACCEPT / REJECT STATUS
-   *  is_accepted = true  → accepted
-   *  is_accepted = false → rejected
+   *  UPDATE STATUS (Accepted / Rejected / Viewed)
    * --------------------------------------------------*/
-  async updateStatus(id, is_accepted) {
+  async updateStatus(id, status) {
     const query = `
       UPDATE proposals
-      SET is_accepted = $2
+      SET status = $2
       WHERE id = $1
       RETURNING *;
     `;
 
-    const { rows } = await db.query(query, [id, is_accepted]);
+    const { rows } = await db.query(query, [id, status]);
     return rows[0] || null;
   }
 };
