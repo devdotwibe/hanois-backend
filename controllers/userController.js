@@ -584,6 +584,22 @@ exports.getPublicProjects = async (req, res, next) => {
   }
 };
 
+exports.getPublicServices = async (req, res, next) => {
+  try {
+    const result = await pool.query(
+      "SELECT service_ids FROM work WHERE listing_style = 'public'"
+    );
+
+    const serviceIdsList = result.rows
+      .map(row => row.service_ids)
+      .filter(Boolean);
+
+    return res.json({ success: true, data: serviceIdsList });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.getProjectById = async (req, res, next) => {
   try {
     const projectId = req.params.id;

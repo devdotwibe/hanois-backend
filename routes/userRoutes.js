@@ -14,7 +14,8 @@ const {
   updateProfile,
    getProjectById ,
 
-     updateProject 
+     updateProject, 
+     getPublicServices
 
      
 } = require('../controllers/userController');
@@ -38,6 +39,8 @@ router.put('/project/:id', authenticateToken, updateProject);
 router.get("/my-projects", authenticateToken, getMyProjects);
 
 router.get("/public-project", getPublicProjects);
+
+router.get("/public-services", getPublicServices);
 
 router.get('/',authenticateToken, getUsers);
 
