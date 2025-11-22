@@ -163,7 +163,7 @@ exports.updateProject = async (req, res, next) => {
       land_size,
       project_type_id,
       design_id,
-      service_ids,
+      service_ids: Array.isArray(service_ids) ? service_ids.map(Number) : [],
     });
 
     // 🧩 Step 4: Handle newly uploaded images (if any)

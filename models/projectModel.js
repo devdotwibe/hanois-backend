@@ -142,6 +142,7 @@ class ProjectModel {
       land_size,
       project_type_id,
       design_id,
+      service_ids,
     } = data;
 
     const result = await pool.query(
@@ -154,11 +155,12 @@ class ProjectModel {
         land_size = COALESCE($4, land_size),
         project_type_id = COALESCE($5, project_type_id),
         design_id = COALESCE($6, design_id),
+        service_ids = COALESCE($7, service_ids),
         updated_at = NOW()
-      WHERE id = $7
+      WHERE id = $8
       RETURNING *
       `,
-      [title, notes, location, land_size, project_type_id, design_id, id]
+      [title, notes, location, land_size, project_type_id, design_id, service_ids, id]
     );
 
     return result.rows[0];
