@@ -519,40 +519,55 @@ exports.getPublicProjects = async (req, res, next) => {
   try {
     const { search } = req.query;
 
-    // 1. Fetch all PUBLIC projects
+    // Pagination params
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 2; // 2 items per page
+    const offset = (page - 1) * limit;
+
+    // 1. Fetch all PUBLIC projects COUNT for pagination
+    const countResult = await pool.query(
+      "SELECT COUNT(*) FROM work WHERE listing_style = 'public'"
+    );
+    const total = parseInt(countResult.rows[0].count);
+
+    // 2. Fetch only records for this page
     const result = await pool.query(
-      "SELECT * FROM work WHERE listing_style = 'public' ORDER BY id DESC"
+      "SELECT * FROM work WHERE listing_style = 'public' ORDER BY id DESC LIMIT $1 OFFSET $2",
+      [limit, offset]
     );
     let projects = result.rows;
 
     if (!projects.length) {
-      return res.json({ success: true, data: [] });
+      return res.json({
+        success: true,
+        data: [],
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      });
     }
 
-    // 2. Extract ALL unique user_ids
+    // 3. Extract user ids
     const userIds = [...new Set(projects.map(p => p.user_id).filter(Boolean))];
 
-    // 3. Fetch users
+    // 4. Fetch related data
     const users = await UsersModel.findByIds(userIds);
     const userMap = {};
     users.forEach(u => (userMap[u.id] = u));
 
-    // 4. Fetch categories
     const { rows: categories } = await pool.query("SELECT * FROM categories");
     const categoryMap = {};
     categories.forEach(c => (categoryMap[c.id] = c));
 
-    // 5. Fetch services
     const { rows: services } = await pool.query("SELECT * FROM services");
     const serviceMap = {};
     services.forEach(s => (serviceMap[s.id] = s));
 
-    // 6. Fetch design (luxury levels)
     const { rows: designs } = await pool.query("SELECT * FROM design");
     const designMap = {};
     designs.forEach(d => (designMap[d.id] = d));
 
-    // 7. Build full response objects with joined fields
+    // 5. Build final response
     let finalProjects = projects.map(p => ({
       ...p,
       user: userMap[p.user_id] || null,
@@ -561,24 +576,24 @@ exports.getPublicProjects = async (req, res, next) => {
       luxury_level_details: designMap[p.luxury_level] || null,
     }));
 
-    // 8. Apply search filter, if any
+    // 6. Search filter
     if (search && search.trim()) {
       const searchLower = search.trim().toLowerCase();
-      finalProjects = finalProjects.filter(p => {
-        return (
-          (p.title && p.title.toLowerCase().includes(searchLower)) ||
-          (p.location && p.location.toLowerCase().includes(searchLower)) ||
-          (p.land_size && p.land_size.toLowerCase().includes(searchLower)) ||
-          (p.user && p.user.name && p.user.name.toLowerCase().includes(searchLower)) ||
-          (p.category && p.category.name && p.category.name.toLowerCase().includes(searchLower)) ||
-          (p.luxury_level_details && p.luxury_level_details.name && p.luxury_level_details.name.toLowerCase().includes(searchLower)) ||
-          (p.service_list &&
-            p.service_list.some(s => s.name && s.name.toLowerCase().includes(searchLower)))
-        );
-      });
+      finalProjects = finalProjects.filter(p =>
+        (p.title && p.title.toLowerCase().includes(searchLower)) ||
+        (p.location && p.location.toLowerCase().includes(searchLower)) ||
+        (p.user?.name && p.user.name.toLowerCase().includes(searchLower))
+      );
     }
 
-    return res.json({ success: true, data: finalProjects });
+    return res.json({
+      success: true,
+      data: finalProjects,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
+
   } catch (err) {
     next(err);
   }
