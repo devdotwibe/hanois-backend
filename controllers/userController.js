@@ -521,7 +521,7 @@ exports.getPublicProjects = async (req, res, next) => {
 
     // Pagination params
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 2; // 2 items per page
+    const limit = parseInt(req.query.limit) || 8; 
     const offset = (page - 1) * limit;
 
     // 1. Fetch all PUBLIC projects COUNT for pagination
