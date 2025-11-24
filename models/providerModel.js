@@ -189,11 +189,13 @@ class ProviderModel {
     return result.rows[0];
   }
 
-  static async getByCategory(categoryId) {
+  static async getByCategory(categoryName) {
     const result = await pool.query(
-      `SELECT * FROM providers 
-       WHERE $1 = ANY(categories_id)`,
-      [parseInt(categoryId)]
+      `SELECT providers.*
+       FROM providers
+       JOIN categories ON categories.id = ANY(providers.categories_id)  -- Assuming categories_id is an array of category IDs
+       WHERE categories.name = $1`,
+      [categoryName]
     );
     return result.rows;
   }
