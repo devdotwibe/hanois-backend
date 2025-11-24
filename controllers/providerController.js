@@ -96,7 +96,6 @@ exports.getProvidersByCategory = async (req, res) => {
       res.status(500).json({ message: "Server error while fetching providers" });
     }
 };
-
 exports.registerProvider = async (req, res, next) => {
   try {
     const { 
@@ -107,7 +106,7 @@ exports.registerProvider = async (req, res, next) => {
       password, 
       location, 
       team_size, 
-      service_id,   // ✅ receive array from frontend
+      categories_id,   // ✅ receive array from frontend
       website, 
       social_media 
     } = req.body;
@@ -128,7 +127,7 @@ exports.registerProvider = async (req, res, next) => {
     const plainPassword = password || '12345678';
     const hashedPassword = await bcrypt.hash(plainPassword.toString(), 10);
 
-    // ✅ Create provider & store service_id
+    // ✅ Create provider & store categories_id
     const provider = await ProviderModel.create({
       name,
       email,
@@ -137,7 +136,7 @@ exports.registerProvider = async (req, res, next) => {
       password: hashedPassword,
       location,
       team_size,
-      service_id,      // ✅ passed to model
+      categories_id,      // ✅ now using correct field
       website,
       social_media
     });

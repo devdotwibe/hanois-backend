@@ -24,7 +24,7 @@ class ProviderModel {
       password,
       location,
       team_size,
-      service_id, // ✅ now expecting array
+      categories_id, // ✅ using categories_id now
       website,
       social_media,
     } = data;
@@ -33,9 +33,9 @@ class ProviderModel {
 
     const result = await pool.query(
       `INSERT INTO providers 
-       (name, email, phone, register_no, password, location, team_size, service_id, website, social_media, created_at)
+       (name, email, phone, register_no, password, location, team_size, categories_id, website, social_media, created_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW())
-       RETURNING id, name, email, phone, location, service_id, created_at`,
+       RETURNING id, name, email, phone, location, categories_id, created_at`,
       [
         name,
         email,
@@ -44,7 +44,7 @@ class ProviderModel {
         hashedPassword,
         location,
         team_size,
-        service_id, // ✅ correctly saved to integer[]
+        categories_id, // ✅ saved to integer[]
         website,
         social_media,
       ]
@@ -79,7 +79,6 @@ class ProviderModel {
          professional_headline,
          image,
          categories_id,
-         service_id,
          created_at
        FROM providers
        WHERE id = $1`,
@@ -122,9 +121,8 @@ class ProviderModel {
     addField("professional_headline", data.professional_headline);
     addField("image", data.image);
 
-    // ✅ updated array fields
+    // ✅ updated ONLY categories_id
     addField("categories_id", data.categories_id);
-    addField("service_id", data.service_id);
 
     if (fields.length === 0) {
       const existing = await pool.query(
@@ -140,7 +138,7 @@ class ProviderModel {
       `UPDATE providers 
        SET ${fields.join(", ")} 
        WHERE id = $${index}
-       RETURNING id, name, email, phone, location, team_size, website, social_media, notes, facebook, instagram, other_link, professional_headline, image, categories_id, service_id, created_at`,
+       RETURNING id, name, email, phone, location, team_size, website, social_media, notes, facebook, instagram, other_link, professional_headline, image, categories_id, created_at`,
       values
     );
 
@@ -191,13 +189,11 @@ class ProviderModel {
     return result.rows[0];
   }
 
-  static async getByCategory(categoryName) {
+  static async getByCategory(categoryId) {
     const result = await pool.query(
-      `SELECT providers.*
-       FROM providers
-       JOIN categories ON categories.id = ANY(providers.categories_id)
-       WHERE categories.name = $1`,
-      [categoryName]
+      `SELECT * FROM providers 
+       WHERE $1 = ANY(categories_id)`,
+      [parseInt(categoryId)]
     );
     return result.rows;
   }
