@@ -579,14 +579,24 @@ exports.getLeads = async (req, res) => {
       return res.status(400).json({ success: false, error: "Provider ID not found" });
     }
 
-    // 1️⃣ System Leads
-    const workQuery = `
-      SELECT *,
-      created_at AS system_created_at
-      FROM work
-      WHERE $1 = ANY(provider_id)
-    `;
-    const { rows: systemLeads } = await pool.query(workQuery, [providerId]);
+// 1️⃣ System Leads (FIX for private listings)
+const workQuery = `
+  SELECT 
+    w.*,
+    w.created_at AS system_created_at,
+
+    -- ✅ attach proposal info for system/private leads
+    p.id AS proposal_id,
+    p.proposalstatus AS proposal_status
+  FROM work w
+  LEFT JOIN proposals p
+      ON p.work_id = w.id
+      AND p.provider_id = $1
+  WHERE $1 = ANY(w.provider_id)
+`;
+
+const { rows: systemLeads } = await pool.query(workQuery, [providerId]);
+
 
     // 2️⃣ Manual Leads
     const manualLeadQuery = `
