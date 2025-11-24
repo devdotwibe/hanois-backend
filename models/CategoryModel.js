@@ -5,7 +5,8 @@ static async getAll() {
   const result = await pool.query(`
     SELECT DISTINCT c.*
     FROM categories c
-    JOIN providers p ON p.category_id = c.id
+    JOIN providers p ON p.categories_id = c.id
+    WHERE p.categories_id IS NOT NULL
     ORDER BY c.id ASC
   `);
   return result.rows;
