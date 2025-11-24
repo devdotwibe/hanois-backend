@@ -1,10 +1,16 @@
 const pool = require("../db/pool");
 
 class CategoryModel {
-  static async getAll() {
-    const result = await pool.query("SELECT * FROM categories ORDER BY id ASC");
-    return result.rows;
-  }
+static async getAll() {
+  const result = await pool.query(`
+    SELECT DISTINCT c.*
+    FROM categories c
+    JOIN providers p ON p.category_id = c.id
+    ORDER BY c.id ASC
+  `);
+  return result.rows;
+}
+
 
   static async findById(id) {
     const result = await pool.query("SELECT * FROM categories WHERE id = $1", [id]);
