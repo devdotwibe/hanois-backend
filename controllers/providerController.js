@@ -225,40 +225,50 @@ exports.loginProvider = async (req, res, next) => {
 
 exports.getProviders = async (req, res, next) => {
   try {
-    const { category, name, service } = req.query;  // Extract category, name, and service filters from query params
-    
+    const { category, name, service, design } = req.query;
+
     let providers;
-    
-    // If category is provided, filter providers by category
-    if (category) {
-      providers = await ProviderModel.getByCategory(category);
-    } else {
-      // Otherwise, fetch all providers
+
+    // 1. Filter by category (only if numeric)
+    if (category && !isNaN(category)) {
+      providers = await ProviderModel.getByCategory(Number(category));
+    } 
+    else {
       providers = await ProviderModel.getAll();
     }
 
-    // If name filter is provided, filter providers by name
+    // 2. Filter providers by project design (server-side filtering)
+    if (design) {
+      const projects = await ProjectModel.getByDesign(design);  // returns all projects with matching design id
+      const providerIds = new Set(projects.map(p => p.provider_id));
+
+      providers = providers.filter(p => providerIds.has(p.id));
+    }
+
+    // 3. Filter by name
     if (name) {
       providers = providers.filter(provider =>
         provider.name.toLowerCase().includes(name.toLowerCase())
       );
     }
 
-    // If service filter is provided, filter providers by service
+    // 4. Filter by service
     if (service) {
       providers = providers.filter(provider =>
-        provider.service.toLowerCase().includes(service.toLowerCase())
+        (provider.service || '').toLowerCase().includes(service.toLowerCase())
       );
     }
 
-    // Return the filtered results
-    successResponse(res, { providers, count: providers.length }, 'Providers retrieved successfully');
+    successResponse(
+      res,
+      { providers, count: providers.length },
+      'Providers retrieved successfully'
+    );
+
   } catch (err) {
     next(err);
   }
 };
-
-
 
 exports.deleteProvider = async (req, res, next) => {
   try {

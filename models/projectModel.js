@@ -174,6 +174,18 @@ class ProjectModel {
     );
     return result.rows[0];
   }
+
+
+  static async getByDesign(designId) {
+    const result = await pool.query(
+      `SELECT * FROM projects WHERE design_id = $1`,
+      [designId]
+    );
+    return result.rows;
+  }
+
+
+
 }
 
 module.exports = ProjectModel;
