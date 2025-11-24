@@ -99,7 +99,19 @@ exports.getProvidersByCategory = async (req, res) => {
 
 exports.registerProvider = async (req, res, next) => {
   try {
-    const { name, email, phone, register_no, password, location, team_size, service, website, social_media } = req.body;
+   const { 
+  name, 
+  email, 
+  phone, 
+  register_no, 
+  password, 
+  location, 
+  team_size, 
+  service_id,   // ✅ receive array
+  website, 
+  social_media 
+} = req.body;
+
 
 
     const emailCheck = await validateEmail(email);
@@ -125,7 +137,8 @@ exports.registerProvider = async (req, res, next) => {
       password: hashedPassword,
       location,
       team_size,
-      service,
+       service_id, 
+     
       website,
       social_media,
     });
