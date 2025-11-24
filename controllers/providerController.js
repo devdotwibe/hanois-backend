@@ -99,24 +99,36 @@ exports.getProvidersByCategory = async (req, res) => {
 
 exports.registerProvider = async (req, res, next) => {
   try {
-    const { name, email, phone, register_no, password, location, team_size, service, website, social_media } = req.body;
+    const { 
+      name, 
+      email, 
+      phone, 
+      register_no, 
+      password, 
+      location, 
+      team_size, 
+      service_id,   // ✅ receive array from frontend
+      website, 
+      social_media 
+    } = req.body;
 
-
+    // ✅ Validate email
     const emailCheck = await validateEmail(email);
-
     if (!emailCheck.valid) {
       return res.status(400).json({ error: emailCheck.message });
     }
 
+    // ✅ Check duplicate
     const existingProvider = await ProviderModel.findByEmail(email);
     if (existingProvider) {
       throw new ConflictError('Email already registered');
     }
 
-     const plainPassword = password || '12345678';
+    // ✅ Default password if empty
+    const plainPassword = password || '12345678';
+    const hashedPassword = await bcrypt.hash(plainPassword.toString(), 10);
 
-    const hashedPassword =  await bcrypt.hash(plainPassword.toString(), 10);
-
+    // ✅ Create provider & store service_id
     const provider = await ProviderModel.create({
       name,
       email,
@@ -125,73 +137,47 @@ exports.registerProvider = async (req, res, next) => {
       password: hashedPassword,
       location,
       team_size,
-      service,
+      service_id,      // ✅ passed to model
       website,
-      social_media,
+      social_media
     });
 
+    // ✅ Password setup email
+    const resetToken = jwt.sign(
+      { providerId: provider.id, email: provider.email },
+      JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
-        const resetToken = jwt.sign(
-        { providerId: provider.id, email: provider.email },
-        "a3f9b0e1a8c2d34e5f67b89a0c1d2e3f4a5b6c7d8e9f00112233445566778899",
-        { expiresIn: "1h" }
-        );
+    const resetLink = `https://hanois.dotwibe.com/login?reset-password=${resetToken}`;
 
-        const resetLink = `${
-             "https://hanois.dotwibe.com"
-        }/login?reset-password=${resetToken}`;
+    await sendMail({
+      to: email,
+      subject: "Registration Successful - Hands Provider",
+      html: `
+        <div style="font-family: Arial; padding: 20px;">
+          <h2 style="color: #28a745;">Success!</h2>
+          <p>Thank you for registering at <b>Hands</b>. You will receive an approval email soon.</p>
+          <p><strong>Registered Email:</strong> ${email}</p>
+          <p><strong>Business Name:</strong> ${name}</p>
+          <br/>
+          <a href="${resetLink}" style="background:#28a745;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;">
+            Set Your Password
+          </a>
+          <br/><br/>
+          <p>If the button doesn't work, use this link:</p>
+          <a href="${resetLink}">${resetLink}</a>
+        </div>
+      `
+    });
 
-           const registrationHtml = `
-            <div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
-                <h2 style="color: #28a745;">Success!</h2>
-                <p>
-                Thank you for registering at <b>Hands</b>. The verification process
-                might take some time. You will receive an email once approved.
-                </p>
-                <hr style="margin: 20px 0;" />
-                <p><strong>Registered Email:</strong> ${email}</p>
-                <p><strong>Business Name:</strong> ${name}</p>
-                <br/>
-                <p>If you wish to set or reset your password, click the button below:</p>
-
-                <div style="margin-top: 20px; text-align: center;">
-                <a href="${resetLink}"
-                    style="
-                    display: inline-block;
-                    background-color: #28a745;
-                    color: #ffffff;
-                    padding: 12px 24px;
-                    text-decoration: none;
-                    border-radius: 6px;
-                    font-weight: bold;
-                    ">
-                    Set Your Password
-                </a>
-                </div>
-
-                <p style="margin-top: 30px;">
-                If the button above doesn’t work, copy and paste this link:
-                <br/>
-                <a href="${resetLink}" style="color: #007bff;">${resetLink}</a>
-                </p>
-
-                <br/>
-                <p>Best regards,<br><strong>${config.mail.fromName || "Hands Support Team"}</strong></p>
-            </div>
-            `;
-
-        await sendMail({
-        to: email,
-        subject: "Registration Successful - Hands Provider",
-        html: registrationHtml,
-        });
-
-    successResponse(
+    return successResponse(
       res,
       { provider },
       'Provider registered successfully',
       201
     );
+
   } catch (err) {
     next(err);
   }
