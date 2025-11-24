@@ -229,10 +229,12 @@ exports.getProviders = async (req, res, next) => {
 
     let providers;
 
-    if (design) {
-      const designArray = design.split(","); 
-      providers = await ProviderModel.getByDesign(designArray);
-    }
+if (design) {
+  // Ensure designNames is always an array
+  const designArray = Array.isArray(design) ? design : design.split(",");
+  providers = await ProviderModel.getByDesign(designArray);
+}
+
 
     else if (category) {
       providers = await ProviderModel.getByCategory(category);
