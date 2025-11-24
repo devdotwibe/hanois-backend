@@ -225,34 +225,41 @@ exports.loginProvider = async (req, res, next) => {
 
 exports.getProviders = async (req, res, next) => {
   try {
-    const { category, name, service } = req.query;  // Extract category, name, and service filters from query params
-    
+    const { category, name, service, design } = req.query;
+
     let providers;
-    
-    // If category is provided, filter providers by category
-    if (category) {
+
+    if (design) {
+      // filter using design
+      providers = await ProviderModel.getByDesign(design);
+    }
+    else if (category) {
       providers = await ProviderModel.getByCategory(category);
-    } else {
-      // Otherwise, fetch all providers
+    }
+    else {
       providers = await ProviderModel.getAll();
     }
 
-    // If name filter is provided, filter providers by name
+    // name filter
     if (name) {
-      providers = providers.filter(provider =>
-        provider.name.toLowerCase().includes(name.toLowerCase())
+      providers = providers.filter(p =>
+        p.name.toLowerCase().includes(name.toLowerCase())
       );
     }
 
-    // If service filter is provided, filter providers by service
+    // service filter
     if (service) {
-      providers = providers.filter(provider =>
-        provider.service.toLowerCase().includes(service.toLowerCase())
+      providers = providers.filter(p =>
+        p.service?.toLowerCase().includes(service.toLowerCase())
       );
     }
 
-    // Return the filtered results
-    successResponse(res, { providers, count: providers.length }, 'Providers retrieved successfully');
+    successResponse(
+      res,
+      { providers, count: providers.length },
+      "Providers retrieved successfully"
+    );
+
   } catch (err) {
     next(err);
   }

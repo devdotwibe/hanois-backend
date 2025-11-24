@@ -199,6 +199,20 @@ class ProviderModel {
     );
     return result.rows;
   }
+
+
+  static async getByDesign(designName) {
+    const result = await pool.query(
+      `SELECT DISTINCT providers.*
+       FROM providers
+       JOIN projects ON projects.provider_id = providers.id
+       JOIN design ON design.id = projects.design_id
+       WHERE design.name = $1`,
+      [designName]
+    );
+    return result.rows;
+}
+
 }
 
 module.exports = ProviderModel;
