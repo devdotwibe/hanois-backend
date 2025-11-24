@@ -229,10 +229,13 @@ exports.getProviders = async (req, res, next) => {
 
     let providers;
 
-    if (design) {
-      // filter using design
-      providers = await ProviderModel.getByDesign(design);
-    }
+if (design) {
+  // Ensure designNames is always an array
+  const designArray = Array.isArray(design) ? design : design.split(",");
+  providers = await ProviderModel.getByDesign(designArray);
+}
+
+
     else if (category) {
       providers = await ProviderModel.getByCategory(category);
     }
@@ -240,14 +243,12 @@ exports.getProviders = async (req, res, next) => {
       providers = await ProviderModel.getAll();
     }
 
-    // name filter
     if (name) {
       providers = providers.filter(p =>
         p.name.toLowerCase().includes(name.toLowerCase())
       );
     }
 
-    // service filter
     if (service) {
       providers = providers.filter(p =>
         p.service?.toLowerCase().includes(service.toLowerCase())
