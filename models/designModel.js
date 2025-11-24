@@ -3,9 +3,16 @@ const pool = require("../db/pool");
 class designModel {
 
   static async getAll() {
-    const result = await pool.query("SELECT * FROM design ORDER BY id ASC");
+    const result = await pool.query(`
+      SELECT DISTINCT d.*
+      FROM design d
+      JOIN projects p ON d.id = p.design_id
+      ORDER BY d.id ASC
+    `);
+
     return result.rows;
   }
+
 
   static async findById(id) {
     const result = await pool.query("SELECT * FROM design WHERE id = $1", [id]);
