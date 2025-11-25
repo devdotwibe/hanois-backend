@@ -89,7 +89,13 @@ static async getAllCategories(req, res) {
     const categories = await CategoryModel.getAllCategories();
     res.status(200).json(categories);
   } catch (error) {
-    console.error("Error fetching all categories:", error);
+    console.error("Error fetching all categories:", {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      detail: error.detail,
+    });
+
     res.status(500).json({ message: "Server error while fetching categories." });
   }
 }
