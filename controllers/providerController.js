@@ -301,45 +301,15 @@ exports.deleteProvider = async (req, res, next) => {
 exports.getProviderById = async (req, res, next) => {
   try {
     const providerId = req.params.id;
-
-    // 1️⃣ Fetch provider
     const provider = await ProviderModel.findById(providerId);
 
     if (!provider) {
       return res.status(404).json({ error: "Provider not found" });
     }
 
-    // 2️⃣ Fetch provider's services
-    const servicesQuery = `
-      SELECT 
-        ps.id,
-        ps.service_id,
-        s.name AS service_name,
-        ps.average_cost,
-        ps.currency,
-        ps.created_at,
-        ps.updated_at
-      FROM provider_services ps
-      LEFT JOIN services s ON ps.service_id = s.id
-      WHERE ps.provider_id = $1
-      ORDER BY ps.created_at DESC
-    `;
-
-    const result = await pool.query(servicesQuery, [providerId]);
-
-    // 3️⃣ Return merged response
-    res.json({
-      provider,
-      services: result.rows, // ✅ array of services
-      servicesCount: result.rowCount,
-    });
-
+    res.json({ provider });
   } catch (err) {
-    console.error("❌ Error fetching provider with services:", err);
-    res.status(500).json({
-      error: "Failed to fetch provider data",
-      details: err.message,
-    });
+    next(err);
   }
 };
 
