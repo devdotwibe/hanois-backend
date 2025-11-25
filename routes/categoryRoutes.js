@@ -9,4 +9,7 @@ router.get('/:id', CategoryController.getById);
 router.put('/:id', CategoryController.update);
 router.delete('/:id', CategoryController.delete);
 
+router.get('/all', CategoryController.getAllCategories);
+
+
 module.exports = router;

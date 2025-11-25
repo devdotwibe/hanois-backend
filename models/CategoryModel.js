@@ -61,6 +61,20 @@ static async getAll() {
     );
     return result.rows[0];
   }
+
+  static async getAllCategories() {
+  const result = await pool.query(`
+    SELECT id, name, created_at
+    FROM categories
+    ORDER BY id ASC
+  `);
+
+  return result.rows;
+}
+
+
+
+
 }
 
 module.exports = CategoryModel;
