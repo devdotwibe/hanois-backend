@@ -22,14 +22,13 @@ class UsersModel {
     const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
     return result.rows[0];
   }
-
-  static async findById(id) {
-    const result = await pool.query(
-      "SELECT id, name, email, phone,profile_image, created_at FROM users WHERE id = $1", 
-      [id]
-    );
-    return result.rows[0];
-  }
+static async findById(id) {
+  const result = await pool.query(
+    "SELECT * FROM users WHERE id = $1", 
+    [id]
+  );
+  return result.rows[0];
+}
 
   static async findByIds (ids) {
     if (!ids?.length) return [];
@@ -67,6 +66,8 @@ class UsersModel {
       values.push(hashedPassword);
     }
 
+
+    
     values.push(id);
 
     const result = await pool.query(
