@@ -182,6 +182,30 @@ exports.registerProvider = async (req, res, next) => {
   }
 };
 
+
+exports.checkEmailExists = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    const provider = await ProviderModel.findByEmail(email);
+
+    if (provider) {
+      return res.status(400).json({ exists: true, error: "Email already exists" });
+    }
+
+    return res.json({ exists: false });
+
+  } catch (error) {
+    return res.status(500).json({ error: "Server error" });
+  }
+};
+
+
+
 exports.loginProvider = async (req, res, next) => {
   try {
     const { email, password } = req.body;

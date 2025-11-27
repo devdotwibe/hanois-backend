@@ -41,7 +41,8 @@ const {
   deleteProposalAttachment,
    acceptProposal,     // ✅ ADD
   rejectProposal,
-    viewProposalStatus
+    viewProposalStatus,
+     checkEmailExists
       // ✅ ADD
 } = require('../controllers/providerController');
 
@@ -49,6 +50,8 @@ const { providerValidation } = require('../middleware/validation');
 const { authenticateToken } = require('../middleware/auth');
 
 // ========================= AUTH =========================
+
+router.post('/check-email', checkEmailExists); 
 router.post('/register', providerValidation, registerProvider);
 router.post('/reset-password', resetPassword);
 
