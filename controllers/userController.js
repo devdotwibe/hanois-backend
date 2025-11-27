@@ -397,16 +397,16 @@ exports.changePassword = async (req, res, next) => {
       return errorResponse(res, "User not found", 404);
     }
 
+    // Compare plain current password with stored hash
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
       return errorResponse(res, "Current password is incorrect", 400);
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    // ❗ Do NOT hash here — model will handle hashing
+    await UsersModel.updateById(userId, { password: newPassword });
 
-    await UsersModel.updateById(userId, { password: hashedPassword });
-
-    successResponse(res, {}, "Password updated successfully");
+    return successResponse(res, {}, "Password updated successfully");
   } catch (err) {
     next(err);
   }
