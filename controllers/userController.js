@@ -386,6 +386,31 @@ exports.add_project = async (req, res, next) => {
     next(err);
   }
 };
+exports.changePassword = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+
+    const user = await UsersModel.findById(userId);
+
+    if (!user) {
+      return errorResponse(res, "User not found", 404);
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return errorResponse(res, "Current password is incorrect", 400);
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await UsersModel.updateById(userId, { password: hashedPassword });
+
+    successResponse(res, {}, "Password updated successfully");
+  } catch (err) {
+    next(err);
+  }
+};
 
 
 exports.getMyProjects = async (req, res, next) => {
