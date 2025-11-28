@@ -38,18 +38,48 @@ exports.createComment = async (req, res, next) => {
 exports.getCommentsByProject = async (req, res, next) => {
   try {
     const { project_id } = req.params;
-
     if (!project_id) throw new ValidationError("project_id is required");
 
-    // Load comments
+    // Load all comments with nested replies
     const comments = await CommentsModel.getForProject(project_id);
 
-    // Add likes/dislikes count to each comment (recursive)
-    const enriched = await addReactionsToComments(comments);
+    // Determine if the request comes from provider or user
+    let user_id = null;
+    let provider_id = null;
+
+    if (req.user?.role === "user") user_id = req.user.id;
+    if (req.user?.role === "provider") provider_id = req.user.id;
+
+    // Recursive function to attach counts + myReaction
+    const addReactions = async (list) => {
+      for (let c of list) {
+        // Load total likes & dislikes
+        const counts = await LikesDislikesModel.countReactions(c.id);
+
+        // Load current user/provider reaction
+        const my = await LikesDislikesModel.findReaction({
+          user_id,
+          provider_id,
+          comment_id: c.id,
+        });
+
+        c.likes = Number(counts.likes) || 0;
+        c.dislikes = Number(counts.dislikes) || 0;
+        c.myReaction = my ? my.type : null;
+
+        // Handle nested replies
+        if (c.replies?.length) {
+          await addReactions(c.replies);
+        }
+      }
+      return list;
+    };
+
+    const enrichedComments = await addReactions(comments);
 
     return successResponse(
       res,
-      { comments: enriched, count: enriched.length },
+      { comments: enrichedComments, count: enrichedComments.length },
       "Comments retrieved successfully"
     );
   } catch (err) {
