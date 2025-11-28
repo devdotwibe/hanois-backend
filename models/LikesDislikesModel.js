@@ -3,7 +3,7 @@ const pool = require("../db/pool");
 class LikesDislikesModel {
 
   /* ======================================================
-     🟩 ADD or UPDATE REACTION (LIKE / DISLIKE)
+     🟩 ADD / UPDATE / TOGGLE REACTION (LIKE / DISLIKE)
      ====================================================== */
   static async react({ user_id = null, provider_id = null, comment_id, type }) {
     if (!comment_id) throw new Error("comment_id is required");
@@ -11,8 +11,18 @@ class LikesDislikesModel {
     // Check existing reaction
     const existing = await this.findReaction({ user_id, provider_id, comment_id });
 
-    if (existing) {
-      // UPDATE reaction
+    /* ======================================================
+       CASE 1: Same reaction clicked again => REMOVE it
+    ====================================================== */
+    if (existing && existing.type === type) {
+      await this.removeReaction({ user_id, provider_id, comment_id });
+      return { removed: true, type: null };
+    }
+
+    /* ======================================================
+       CASE 2: Reaction exists but type changed => UPDATE
+    ====================================================== */
+    if (existing && existing.type !== type) {
       const result = await pool.query(
         `UPDATE likes_dislikes
          SET type = $1, created_at = NOW()
@@ -23,7 +33,9 @@ class LikesDislikesModel {
       return result.rows[0];
     }
 
-    // INSERT new reaction
+    /* ======================================================
+       CASE 3: No reaction => INSERT NEW
+    ====================================================== */
     const result = await pool.query(
       `INSERT INTO likes_dislikes (user_id, provider_id, comment_id, type, created_at)
        VALUES ($1, $2, $3, $4, NOW())
@@ -38,11 +50,9 @@ class LikesDislikesModel {
      🟩 FIND EXISTING REACTION
      ====================================================== */
   static async findReaction({ user_id = null, provider_id = null, comment_id }) {
-    let query;
-    let params;
+    let query, params;
 
     if (user_id !== null) {
-      // Logged-in USER
       query = `
         SELECT *
         FROM likes_dislikes
@@ -52,7 +62,6 @@ class LikesDislikesModel {
       params = [comment_id, user_id];
 
     } else if (provider_id !== null) {
-      // Logged-in PROVIDER
       query = `
         SELECT *
         FROM likes_dislikes
@@ -62,7 +71,6 @@ class LikesDislikesModel {
       params = [comment_id, provider_id];
 
     } else {
-      // No identity — no reaction possible
       return null;
     }
 
@@ -74,8 +82,7 @@ class LikesDislikesModel {
      🟩 REMOVE REACTION
      ====================================================== */
   static async removeReaction({ user_id = null, provider_id = null, comment_id }) {
-    let query;
-    let params;
+    let query, params;
 
     if (user_id !== null) {
       query = `
@@ -126,7 +133,6 @@ class LikesDislikesModel {
        ORDER BY created_at DESC`,
       [comment_id]
     );
-
     return result.rows;
   }
 }
