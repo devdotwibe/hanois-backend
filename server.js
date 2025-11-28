@@ -28,7 +28,7 @@ const projectRoutes = require('./routes/projectRoutes');
 const projectImageRoutes = require('./routes/projectImageRoutes');
 
 // const likesDislikesRoutes = require("./routes/likesDislikes");
-// const commentsRoutes = require("./routes/commentsRoutes");
+const commentsRoutes = require("./routes/commentsRoutes");
 
 
 
@@ -116,7 +116,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/project-images', projectImageRoutes);
 
 
-app.use("/api/reactions", likesDislikesRoutes);
+// app.use("/api/reactions", likesDislikesRoutes);
 app.use("/api/comments", commentsRoutes);
 
 
