@@ -27,10 +27,10 @@ const serviceRoutes = require('./routes/serviceRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const projectImageRoutes = require('./routes/projectImageRoutes');
 
-// const likesDislikesRoutes = require("./routes/likesDislikes");
+
 const commentsRoutes = require("./routes/commentsRoutes");
 
-
+const likesDislikesRoutes = require("./routes/likesDislikes");
 
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const pool = require('./db/pool');
@@ -116,7 +116,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/project-images', projectImageRoutes);
 
 
-// app.use("/api/reactions", likesDislikesRoutes);
+app.use("/api/reactions", likesDislikesRoutes);
 app.use("/api/comments", commentsRoutes);
 
 
