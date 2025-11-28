@@ -8,7 +8,8 @@ const { ValidationError, NotFoundError } = require("../utils/errors");
 exports.createComment = async (req, res, next) => {
   try {
     const { project_id, message, parent_id } = req.body;
-    const user_id = req.user?.id || req.body.user_id;
+  const user_id = 25;
+
 
     if (!project_id) throw new ValidationError("project_id is required");
     if (!message) throw new ValidationError("message is required");
