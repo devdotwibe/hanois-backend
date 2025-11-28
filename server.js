@@ -5,10 +5,6 @@ const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
-
-const likesDislikesRoutes = require("./routes/likesDislikes");
-const commentsRoutes = require("./routes/commentsRoutes");
-
 const userRoutes = require('./routes/userRoutes');
 
 const contactRoutes = require('./routes/contactRoutes');
@@ -31,6 +27,8 @@ const serviceRoutes = require('./routes/serviceRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const projectImageRoutes = require('./routes/projectImageRoutes');
 
+const likesDislikesRoutess = require("./routes/likesDislikes");
+const commentsRoutess = require("./routes/commentsRoutes");
 
 
 
@@ -75,8 +73,6 @@ if (!fs.existsSync(projectUploadDir)) {
   console.log('✅ Created /public/uploads/projects directory automatically');
 }
 
-app.use("/api/reactions", likesDislikesRoutes);
-app.use("/api/comments", commentsRoutes);
 
 
 app.use('/banner', express.static(bannerDir));
@@ -120,6 +116,8 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/project-images', projectImageRoutes);
 
 
+app.use("/api/reactions", likesDislikesRoutess);
+app.use("/api/comments", commentsRoutess);
 
 
 app.use('/proposals', express.static(proposalDir));
