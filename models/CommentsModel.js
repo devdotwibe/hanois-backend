@@ -17,37 +17,44 @@ class CommentsModel {
   /* ======================================================
      🟩 GET COMMENTS + NESTED REPLIES FOR A PROJECT
      ====================================================== */
-  static async getForProject(project_id) {
-    const result = await pool.query(
-      `SELECT * FROM comments
-       WHERE project_id = $1
-       ORDER BY created_at ASC`,
-      [project_id]
-    );
+static async getForProject(project_id) {
+  const result = await pool.query(
+    `
+    SELECT 
+      c.*,
+      p.name AS provider_name,
+      p.image AS provider_image
+    FROM comments c
+    LEFT JOIN providers p ON p.id = c.provider_id
+    WHERE c.project_id = $1
+    ORDER BY c.created_at ASC
+    `,
+    [project_id]
+  );
 
-    const rows = result.rows;
+  const rows = result.rows;
 
-    // Build nested structure
-    const map = {};
-    const rootComments = [];
+  // Build nested replies
+  const map = {};
+  const rootComments = [];
 
-    rows.forEach((c) => {
-      c.replies = [];
-      map[c.id] = c;
-    });
+  rows.forEach((c) => {
+    c.replies = [];
+    map[c.id] = c;
+  });
 
-    rows.forEach((c) => {
-      if (c.parent_id) {
-        if (map[c.parent_id]) {
-          map[c.parent_id].replies.push(c);
-        }
-      } else {
-        rootComments.push(c);
+  rows.forEach((c) => {
+    if (c.parent_id) {
+      if (map[c.parent_id]) {
+        map[c.parent_id].replies.push(c);
       }
-    });
+    } else {
+      rootComments.push(c);
+    }
+  });
 
-    return rootComments;
-  }
+  return rootComments;
+}
 
   /* ======================================================
      🟩 FIND COMMENT BY ID
