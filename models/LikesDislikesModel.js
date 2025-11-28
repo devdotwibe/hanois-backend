@@ -1,27 +1,24 @@
 const pool = require("../db/pool");
 
 class LikesDislikesModel {
+
   /* ======================================================
      🟩 ADD or UPDATE REACTION (LIKE / DISLIKE)
-     - Supports user_id OR provider_id
-  ====================================================== */
+     ====================================================== */
   static async react({ user_id = null, provider_id = null, comment_id, type }) {
     if (!comment_id) throw new Error("comment_id is required");
-    if (!type) throw new Error("Reaction type is required");
 
-    // Check existing reaction
+    // Find existing reaction
     const existing = await this.findReaction({ user_id, provider_id, comment_id });
 
     if (existing) {
-      // Update the existing reaction
+      // Update existing reaction
       const result = await pool.query(
         `UPDATE likes_dislikes
          SET type = $1, created_at = NOW()
-         WHERE comment_id = $2 
-           AND (user_id = $3 OR (user_id IS NULL AND $3 IS NULL))
-           AND (provider_id = $4 OR (provider_id IS NULL AND $4 IS NULL))
+         WHERE id = $2
          RETURNING *`,
-        [type, comment_id, user_id, provider_id]
+        [type, existing.id]
       );
       return result.rows[0];
     }
@@ -39,37 +36,61 @@ class LikesDislikesModel {
 
   /* ======================================================
      🟩 FIND EXISTING REACTION
-  ====================================================== */
+     ====================================================== */
   static async findReaction({ user_id = null, provider_id = null, comment_id }) {
-    const result = await pool.query(
-      `SELECT * FROM likes_dislikes
-       WHERE comment_id = $1
-         AND (user_id = $2 OR (user_id IS NULL AND $2 IS NULL))
-         AND (provider_id = $3 OR (provider_id IS NULL AND $3 IS NULL))
-       LIMIT 1`,
-      [comment_id, user_id, provider_id]
-    );
+
+    let result;
+
+    if (user_id) {
+      // Reaction by user
+      result = await pool.query(
+        `SELECT * FROM likes_dislikes
+         WHERE comment_id = $1 AND user_id = $2
+         LIMIT 1`,
+        [comment_id, user_id]
+      );
+    } else {
+      // Reaction by provider
+      result = await pool.query(
+        `SELECT * FROM likes_dislikes
+         WHERE comment_id = $1 AND provider_id = $2
+         LIMIT 1`,
+        [comment_id, provider_id]
+      );
+    }
+
     return result.rows[0];
   }
 
   /* ======================================================
      🟩 REMOVE REACTION
-  ====================================================== */
+     ====================================================== */
   static async removeReaction({ user_id = null, provider_id = null, comment_id }) {
-    const result = await pool.query(
-      `DELETE FROM likes_dislikes
-       WHERE comment_id = $1
-         AND (user_id = $2 OR (user_id IS NULL AND $2 IS NULL))
-         AND (provider_id = $3 OR (provider_id IS NULL AND $3 IS NULL))
-       RETURNING id`,
-      [comment_id, user_id, provider_id]
-    );
+
+    let result;
+
+    if (user_id) {
+      result = await pool.query(
+        `DELETE FROM likes_dislikes
+         WHERE comment_id = $1 AND user_id = $2
+         RETURNING id`,
+        [comment_id, user_id]
+      );
+    } else {
+      result = await pool.query(
+        `DELETE FROM likes_dislikes
+         WHERE comment_id = $1 AND provider_id = $2
+         RETURNING id`,
+        [comment_id, provider_id]
+      );
+    }
+
     return result.rows[0];
   }
 
   /* ======================================================
      🟩 COUNT LIKE / DISLIKE FOR A COMMENT
-  ====================================================== */
+     ====================================================== */
   static async countReactions(comment_id) {
     const result = await pool.query(
       `SELECT 
@@ -85,7 +106,7 @@ class LikesDislikesModel {
 
   /* ======================================================
      🟩 GET ALL REACTIONS FOR A COMMENT
-  ====================================================== */
+     ====================================================== */
   static async getReactions(comment_id) {
     const result = await pool.query(
       `SELECT * FROM likes_dislikes
@@ -93,6 +114,7 @@ class LikesDislikesModel {
        ORDER BY created_at DESC`,
       [comment_id]
     );
+
     return result.rows;
   }
 }

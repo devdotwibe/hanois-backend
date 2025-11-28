@@ -13,12 +13,20 @@ exports.react = async (req, res, next) => {
     if (!["like", "dislike"].includes(type))
       throw new ValidationError("Reaction type must be either 'like' or 'dislike'");
 
+    // Identify who is reacting
     let user_id = null;
     let provider_id = null;
 
-    // pull identity from token
-    if (req.user?.role === "user") user_id = req.user.id;
-    if (req.user?.role === "provider") provider_id = req.user.id;
+    // Always trust req.user (from token), never body
+    if (req.user) {
+      if (req.user.role === "user") user_id = req.user.id;
+      if (req.user.role === "provider") provider_id = req.user.id;
+    }
+
+    // No identity = no reaction
+    if (!user_id && !provider_id) {
+      throw new ValidationError("Unable to determine reacting user");
+    }
 
     const reaction = await LikesDislikesModel.react({
       user_id,
@@ -27,7 +35,12 @@ exports.react = async (req, res, next) => {
       type,
     });
 
-    return successResponse(res, { reaction }, `Reaction '${type}' saved`, 200);
+    return successResponse(
+      res,
+      { reaction },
+      `Reaction '${type}' saved`,
+      200
+    );
 
   } catch (err) {
     next(err);
@@ -46,8 +59,14 @@ exports.removeReaction = async (req, res, next) => {
     let user_id = null;
     let provider_id = null;
 
-    if (req.user?.role === "user") user_id = req.user.id;
-    if (req.user?.role === "provider") provider_id = req.user.id;
+    if (req.user) {
+      if (req.user.role === "user") user_id = req.user.id;
+      if (req.user.role === "provider") provider_id = req.user.id;
+    }
+
+    if (!user_id && !provider_id) {
+      throw new ValidationError("Unable to determine reacting user");
+    }
 
     const deleted = await LikesDislikesModel.removeReaction({
       user_id,
@@ -57,7 +76,11 @@ exports.removeReaction = async (req, res, next) => {
 
     if (!deleted) throw new NotFoundError("No reaction found");
 
-    return successResponse(res, { id: deleted.id }, "Reaction removed");
+    return successResponse(
+      res,
+      { id: deleted.id },
+      "Reaction removed"
+    );
 
   } catch (err) {
     next(err);
@@ -75,7 +98,11 @@ exports.getCounts = async (req, res, next) => {
 
     const counts = await LikesDislikesModel.countReactions(comment_id);
 
-    return successResponse(res, { counts }, "Counts retrieved");
+    return successResponse(
+      res,
+      { counts },
+      "Counts retrieved"
+    );
 
   } catch (err) {
     next(err);
