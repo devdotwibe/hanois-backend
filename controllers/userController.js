@@ -656,12 +656,13 @@ exports.getPublicServices = async (req, res, next) => {
   }
 };
 
-
 exports.getProjectById = async (req, res, next) => {
   try {
     const projectId = req.params.id;
 
-    // 1. Fetch project
+    /* ===========================================================
+       1. FETCH PROJECT
+       =========================================================== */
     const { rows } = await pool.query(
       "SELECT * FROM work WHERE id = $1",
       [projectId]
@@ -676,57 +677,62 @@ exports.getProjectById = async (req, res, next) => {
 
     const project = rows[0];
 
-    // 2. Fetch category
+    /* ===========================================================
+       2. CATEGORY
+       =========================================================== */
     const category = await pool.query(
       "SELECT * FROM categories WHERE id = $1",
       [project.project_type]
     );
 
-    // 3. Fetch luxury level
+    /* ===========================================================
+       3. LUXURY LEVEL
+       =========================================================== */
     const luxury = await pool.query(
       "SELECT * FROM design WHERE id = $1",
       [project.luxury_level]
     );
 
-    // 4. Fetch services
+    /* ===========================================================
+       4. SERVICES
+       =========================================================== */
     let service_list = [];
     if (project.service_ids?.length > 0) {
-      const { rows } = await pool.query(
+      const result = await pool.query(
         `SELECT * FROM services WHERE id = ANY($1)`,
         [project.service_ids]
       );
-      service_list = rows;
+      service_list = result.rows;
     }
 
-    // 5. Fetch proposals
+    /* ===========================================================
+       5. PROPOSALS
+       =========================================================== */
     const proposalsResult = await pool.query(
-      `
-      SELECT * FROM proposals
-      WHERE work_id = $1
-      ORDER BY created_at DESC
-      `,
+      `SELECT * FROM proposals WHERE work_id = $1 ORDER BY created_at DESC`,
       [projectId]
     );
-
     const proposals = proposalsResult.rows;
 
-    // 6. Fetch proposal attachments
+    /* ===========================================================
+       6. ATTACHMENTS
+       =========================================================== */
     const proposalIds = proposals.map((p) => p.id);
 
     let attachments = [];
     if (proposalIds.length > 0) {
       const attachResult = await pool.query(
-        `
-        SELECT * FROM proposal_attachments
-        WHERE proposal_id = ANY($1)
-        ORDER BY created_at DESC
-        `,
+        `SELECT * FROM proposal_attachments 
+         WHERE proposal_id = ANY($1)
+         ORDER BY created_at DESC`,
         [proposalIds]
       );
       attachments = attachResult.rows;
     }
 
-    // 7. Fetch providers
+    /* ===========================================================
+       7. PROVIDERS (FOR PROPOSALS)
+       =========================================================== */
     const providerIds = [
       ...new Set(
         proposals
@@ -738,21 +744,19 @@ exports.getProjectById = async (req, res, next) => {
     let providerMap = {};
     if (providerIds.length > 0) {
       const providersResult = await pool.query(
-        `
-        SELECT *
-        FROM providers
-        WHERE id = ANY($1)
-        `,
+        `SELECT * FROM providers WHERE id = ANY($1)`,
         [providerIds]
       );
 
-      providerMap = providersResult.rows.reduce((acc, provider) => {
-        acc[provider.id] = provider;
+      providerMap = providersResult.rows.reduce((acc, p) => {
+        acc[p.id] = p;
         return acc;
       }, {});
     }
 
-    // 8. Merge attachments and provider into proposals
+    /* ===========================================================
+       8. MERGE PROVIDER + ATTACHMENTS
+       =========================================================== */
     const proposalsWithAttachments = proposals.map((proposal) => ({
       ...proposal,
       attachments: attachments.filter(
@@ -762,20 +766,20 @@ exports.getProjectById = async (req, res, next) => {
     }));
 
     /* ===========================================================
-       9. LOAD COMMENTS + LIKES + DISLIKES + MY REACTION
+       9. LOAD COMMENTS + PROFILE IMAGES + LIKES/DISLIKES
        =========================================================== */
 
-    // Get nested comments
+    // (A) All comments with user + provider details included
     let comments = await CommentsModel.getForProject(projectId);
 
-    // Determine identity of logged in user
+    // Identity for myReaction
     let user_id = null;
     let provider_id = null;
 
     if (req.user?.role === "user") user_id = req.user.id;
     if (req.user?.role === "provider") provider_id = req.user.id;
 
-    // Helper to attach reaction info
+    // (B) Attach reactions
     async function enrichComments(list) {
       for (let c of list) {
         const counts = await LikesDislikesModel.countReactions(c.id);
@@ -789,7 +793,7 @@ exports.getProjectById = async (req, res, next) => {
         c.dislikes = Number(counts.dislikes) || 0;
         c.myReaction = my ? my.type : null;
 
-        if (c.replies?.length > 0) {
+        if (c.replies && c.replies.length > 0) {
           await enrichComments(c.replies);
         }
       }
@@ -799,9 +803,8 @@ exports.getProjectById = async (req, res, next) => {
     comments = await enrichComments(comments);
 
     /* ===========================================================
-       10. SEND FINAL RESPONSE
+       10. FINAL RESPONSE
        =========================================================== */
-
     return res.json({
       success: true,
       data: {
@@ -811,7 +814,7 @@ exports.getProjectById = async (req, res, next) => {
           luxury_level_details: luxury.rows[0] || null,
           service_list,
           proposals: proposalsWithAttachments,
-          comments: comments,
+          comments,
           comments_count: comments.length,
         },
       },
@@ -821,7 +824,6 @@ exports.getProjectById = async (req, res, next) => {
     next(err);
   }
 };
-
 
 
 
