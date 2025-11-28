@@ -43,20 +43,18 @@ exports.getCommentsByProject = async (req, res, next) => {
     // Load all comments with nested replies
     const comments = await CommentsModel.getForProject(project_id);
 
-    // Determine if the request comes from provider or user
+    // Identify who is reading (for myReaction)
     let user_id = null;
     let provider_id = null;
 
     if (req.user?.role === "user") user_id = req.user.id;
     if (req.user?.role === "provider") provider_id = req.user.id;
 
-    // Recursive function to attach counts + myReaction
+    // Recursive function to attach likes/dislikes & myReaction
     const addReactions = async (list) => {
       for (let c of list) {
-        // Load total likes & dislikes
         const counts = await LikesDislikesModel.countReactions(c.id);
 
-        // Load current user/provider reaction
         const my = await LikesDislikesModel.findReaction({
           user_id,
           provider_id,
@@ -67,19 +65,18 @@ exports.getCommentsByProject = async (req, res, next) => {
         c.dislikes = Number(counts.dislikes) || 0;
         c.myReaction = my ? my.type : null;
 
-        // Handle nested replies
-        if (c.replies?.length) {
+        if (c.replies?.length > 0) {
           await addReactions(c.replies);
         }
       }
       return list;
     };
 
-    const enrichedComments = await addReactions(comments);
+    const enriched = await addReactions(comments);
 
     return successResponse(
       res,
-      { comments: enrichedComments, count: enrichedComments.length },
+      { comments: enriched, count: enriched.length },
       "Comments retrieved successfully"
     );
   } catch (err) {
@@ -106,30 +103,3 @@ exports.deleteComment = async (req, res, next) => {
     next(err);
   }
 };
-
-/* ======================================================
-   🟦 HELPER — Attach Likes & Dislikes to Each Comment
-   ====================================================== */
-async function addReactionsToComments(comments) {
-  const updated = [];
-
-  for (const c of comments) {
-    // Get counts for this comment
-    const counts = await LikesDislikesModel.countReactions(c.id);
-
-    const enriched = {
-      ...c,
-      likes: Number(counts.likes) || 0,
-      dislikes: Number(counts.dislikes) || 0,
-    };
-
-    // If comment has replies, recursively add counts
-    if (c.replies && c.replies.length > 0) {
-      enriched.replies = await addReactionsToComments(c.replies);
-    }
-
-    updated.push(enriched);
-  }
-
-  return updated;
-}
