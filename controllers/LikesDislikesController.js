@@ -2,74 +2,103 @@ const LikesDislikesModel = require("../models/LikesDislikesModel");
 const { successResponse } = require("../utils/response");
 const { ValidationError, NotFoundError } = require("../utils/errors");
 
-// Add or update reaction
+/* ======================================================
+   🟩 ADD or UPDATE reaction for a COMMENT
+   ====================================================== */
 exports.react = async (req, res, next) => {
   try {
-    const { project_id, type } = req.body;
-    const user_id = req.user?.id || req.body.user_id;
+    const { comment_id, type } = req.body;
 
-    if (!project_id) throw new ValidationError("project_id is required");
+    if (!comment_id) throw new ValidationError("comment_id is required");
     if (!["like", "dislike"].includes(type))
       throw new ValidationError("Reaction type must be either 'like' or 'dislike'");
 
-    const reaction = await LikesDislikesModel.react(user_id, project_id, type);
+    let user_id = null;
+    let provider_id = null;
 
-    return successResponse(
-      res,
-      { reaction },
-      `Reaction updated to '${type}' successfully`,
-      200
-    );
+    // pull identity from token
+    if (req.user?.role === "user") user_id = req.user.id;
+    if (req.user?.role === "provider") provider_id = req.user.id;
+
+    const reaction = await LikesDislikesModel.react({
+      user_id,
+      provider_id,
+      comment_id,
+      type,
+    });
+
+    return successResponse(res, { reaction }, `Reaction '${type}' saved`, 200);
+
   } catch (err) {
     next(err);
   }
 };
 
-// Remove reaction
+/* ======================================================
+   🟩 REMOVE reaction for a COMMENT
+   ====================================================== */
 exports.removeReaction = async (req, res, next) => {
   try {
-    const { project_id } = req.body;
-    const user_id = req.user?.id || req.body.user_id;
+    const { comment_id } = req.body;
 
-    if (!project_id) throw new ValidationError("project_id is required");
+    if (!comment_id) throw new ValidationError("comment_id is required");
 
-    const deleted = await LikesDislikesModel.removeReaction(user_id, project_id);
-    if (!deleted) throw new NotFoundError("No reaction found to remove");
+    let user_id = null;
+    let provider_id = null;
 
-    return successResponse(res, { id: deleted.id }, "Reaction removed successfully");
+    if (req.user?.role === "user") user_id = req.user.id;
+    if (req.user?.role === "provider") provider_id = req.user.id;
+
+    const deleted = await LikesDislikesModel.removeReaction({
+      user_id,
+      provider_id,
+      comment_id,
+    });
+
+    if (!deleted) throw new NotFoundError("No reaction found");
+
+    return successResponse(res, { id: deleted.id }, "Reaction removed");
+
   } catch (err) {
     next(err);
   }
 };
 
-// Get total likes & dislikes
+/* ======================================================
+   🟩 COUNT reactions for a COMMENT
+   ====================================================== */
 exports.getCounts = async (req, res, next) => {
   try {
-    const { project_id } = req.params;
-    if (!project_id) throw new ValidationError("project_id is required");
+    const { comment_id } = req.params;
 
-    const counts = await LikesDislikesModel.countReactions(project_id);
+    if (!comment_id) throw new ValidationError("comment_id is required");
 
-    return successResponse(res, { counts }, "Reactions count retrieved successfully");
+    const counts = await LikesDislikesModel.countReactions(comment_id);
+
+    return successResponse(res, { counts }, "Counts retrieved");
+
   } catch (err) {
     next(err);
   }
 };
 
-// Get list of reactions
+/* ======================================================
+   🟩 LIST reactions for a COMMENT
+   ====================================================== */
 exports.getReactions = async (req, res, next) => {
   try {
-    const { project_id } = req.params;
+    const { comment_id } = req.params;
 
-    if (!project_id) throw new ValidationError("project_id is required");
+    if (!comment_id) throw new ValidationError("comment_id is required");
 
-    const reactions = await LikesDislikesModel.getReactions(project_id);
+    const reactions = await LikesDislikesModel.getReactions(comment_id);
 
     return successResponse(
       res,
       { reactions, count: reactions.length },
-      "Reactions retrieved successfully"
+      "Reactions retrieved"
     );
+
   } catch (err) {
     next(err);
   }
