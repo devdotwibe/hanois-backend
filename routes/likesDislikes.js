@@ -10,20 +10,16 @@ const {
 
 const { authenticateToken } = require("../middleware/auth");
 
-/* ======================================================
-   🟩 REACTIONS ROUTES (LIKE / DISLIKE)
-   ====================================================== */
-
-// ✅ Add or update reaction (protected)
+// Add or update reaction (protected)
 router.post("/", authenticateToken, react);
 
-// ✅ Remove reaction (protected)
+// Remove reaction (protected)
 router.delete("/", authenticateToken, removeReaction);
 
-// ✅ Get total counts for a project (public)
+// Get total counts for a project (public)
 router.get("/count/:project_id", getCounts);
 
-// ✅ Get all reactions for a project (public)
+// Get all reactions for a project (public)
 router.get("/list/:project_id", getReactions);
 
 module.exports = router;
