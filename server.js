@@ -115,8 +115,8 @@ app.use('/api/projects', projectRoutes);
 
 app.use('/api/project-images', projectImageRoutes);
 
-app.use("/api/reactions", likesDislikesRoutes);
-app.use("/api/comments", commentsRoutes);
+// app.use("/api/reactions", likesDislikesRoutes);
+// app.use("/api/comments", commentsRoutes);
 
 
 
