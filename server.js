@@ -17,11 +17,6 @@ const settingsRoutes = require('./routes/settingsRoutes');
 const providerRouted = require('./routes/providerRouted');
 
 const faqRoutes = require("./routes/faqRoutes");
-// const likesDislikesRoutes = require('./routes/likesDislikes');
-
-// const commentsRoutes = require("./routes/commentsRoutes");
-
-
 
 const pageRoutes = require("./routes/pageRoutes");
 
@@ -31,6 +26,11 @@ const serviceRoutes = require('./routes/serviceRoutes');
 
 const projectRoutes = require('./routes/projectRoutes');
 const projectImageRoutes = require('./routes/projectImageRoutes');
+
+const likesDislikesRoutes = require("./routes/likesDislikes");
+const commentsRoutes = require("./routes/commentsRoutes");
+
+
 
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const pool = require('./db/pool');
@@ -115,9 +115,10 @@ app.use('/api/projects', projectRoutes);
 
 app.use('/api/project-images', projectImageRoutes);
 
-// app.use("/api/reactions", likesDislikesRoutes);
+app.use("/api/reactions", likesDislikesRoutes);
+app.use("/api/comments", commentsRoutes);
 
-// app.use("/api/comments", commentsRoutes);
+
 
 app.use('/proposals', express.static(proposalDir));
 
