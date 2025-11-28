@@ -17,6 +17,11 @@ const settingsRoutes = require('./routes/settingsRoutes');
 const providerRouted = require('./routes/providerRouted');
 
 const faqRoutes = require("./routes/faqRoutes");
+const likesDislikesRoutes = require('./routes/likesDislikes');
+
+const commentsRoutes = require("./routes/commentsRoutes");
+
+
 
 const pageRoutes = require("./routes/pageRoutes");
 
@@ -109,6 +114,10 @@ app.use("/api/design", designRoutes);
 app.use('/api/projects', projectRoutes);
 
 app.use('/api/project-images', projectImageRoutes);
+
+app.use("/api/reactions", likesDislikesRoutes);
+
+app.use("/api/comments", commentsRoutes);
 
 app.use('/proposals', express.static(proposalDir));
 
