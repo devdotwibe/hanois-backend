@@ -10,6 +10,8 @@ const WorkModel = require('../models/workModel');
 const { sendMail } = require('../config/mailer');
 const multer = require("multer");
 const path = require("path");
+const CommentsModel = require("../models/CommentsModel");
+const LikesDislikesModel = require("../models/LikesDislikesModel");
 
 exports.registerUser = async (req, res, next) => {
   try {
@@ -654,6 +656,7 @@ exports.getPublicServices = async (req, res, next) => {
   }
 };
 
+
 exports.getProjectById = async (req, res, next) => {
   try {
     const projectId = req.params.id;
@@ -685,7 +688,7 @@ exports.getProjectById = async (req, res, next) => {
       [project.luxury_level]
     );
 
-    // 4. Fetch service list
+    // 4. Fetch services
     let service_list = [];
     if (project.service_ids?.length > 0) {
       const { rows } = await pool.query(
@@ -695,7 +698,7 @@ exports.getProjectById = async (req, res, next) => {
       service_list = rows;
     }
 
-    // 5. FETCH PROPOSALS for this project
+    // 5. Fetch proposals
     const proposalsResult = await pool.query(
       `
       SELECT * FROM proposals
@@ -707,7 +710,7 @@ exports.getProjectById = async (req, res, next) => {
 
     const proposals = proposalsResult.rows;
 
-    // 6. FETCH ATTACHMENTS for all proposals
+    // 6. Fetch proposal attachments
     const proposalIds = proposals.map((p) => p.id);
 
     let attachments = [];
@@ -723,7 +726,7 @@ exports.getProjectById = async (req, res, next) => {
       attachments = attachResult.rows;
     }
 
-    // 7. FETCH PROVIDERS using provider_id from proposals
+    // 7. Fetch providers
     const providerIds = [
       ...new Set(
         proposals
@@ -736,25 +739,7 @@ exports.getProjectById = async (req, res, next) => {
     if (providerIds.length > 0) {
       const providersResult = await pool.query(
         `
-        SELECT
-          id,
-          name,
-          email,
-          phone,
-          location,
-          team_size,
-          service,
-          website,
-          social_media,
-          notes,
-          facebook,
-          instagram,
-          other_link,
-          professional_headline,
-          image,
-          categories_id,
-          service_id,
-          created_at
+        SELECT *
         FROM providers
         WHERE id = ANY($1)
         `,
@@ -767,7 +752,7 @@ exports.getProjectById = async (req, res, next) => {
       }, {});
     }
 
-    // 8. Merge attachments + provider into proposals
+    // 8. Merge attachments and provider into proposals
     const proposalsWithAttachments = proposals.map((proposal) => ({
       ...proposal,
       attachments: attachments.filter(
@@ -776,7 +761,47 @@ exports.getProjectById = async (req, res, next) => {
       provider: providerMap[proposal.provider_id] || null,
     }));
 
-    // 9. SEND FINAL RESPONSE
+    /* ===========================================================
+       9. LOAD COMMENTS + LIKES + DISLIKES + MY REACTION
+       =========================================================== */
+
+    // Get nested comments
+    let comments = await CommentsModel.getForProject(projectId);
+
+    // Determine identity of logged in user
+    let user_id = null;
+    let provider_id = null;
+
+    if (req.user?.role === "user") user_id = req.user.id;
+    if (req.user?.role === "provider") provider_id = req.user.id;
+
+    // Helper to attach reaction info
+    async function enrichComments(list) {
+      for (let c of list) {
+        const counts = await LikesDislikesModel.countReactions(c.id);
+        const my = await LikesDislikesModel.findReaction({
+          user_id,
+          provider_id,
+          comment_id: c.id,
+        });
+
+        c.likes = Number(counts.likes) || 0;
+        c.dislikes = Number(counts.dislikes) || 0;
+        c.myReaction = my ? my.type : null;
+
+        if (c.replies?.length > 0) {
+          await enrichComments(c.replies);
+        }
+      }
+      return list;
+    }
+
+    comments = await enrichComments(comments);
+
+    /* ===========================================================
+       10. SEND FINAL RESPONSE
+       =========================================================== */
+
     return res.json({
       success: true,
       data: {
@@ -786,6 +811,8 @@ exports.getProjectById = async (req, res, next) => {
           luxury_level_details: luxury.rows[0] || null,
           service_list,
           proposals: proposalsWithAttachments,
+          comments: comments,
+          comments_count: comments.length,
         },
       },
     });
@@ -794,6 +821,11 @@ exports.getProjectById = async (req, res, next) => {
     next(err);
   }
 };
+
+
+
+
+
 exports.updateProject = async (req, res, next) => {
   try {
     const projectId = req.params.id;
