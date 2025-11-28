@@ -7,16 +7,16 @@ const { ValidationError, NotFoundError } = require("../utils/errors");
    ====================================================== */
 exports.createComment = async (req, res, next) => {
   try {
-    const { project_id, message, parent_id } = req.body;
-  const user_id = 25;
-
+    const { project_id, message, parent_id, user_id, provider_id } = req.body;
 
     if (!project_id) throw new ValidationError("project_id is required");
     if (!message) throw new ValidationError("message is required");
 
+    // ⭐ user_id and provider_id both allowed to be null
     const comment = await CommentsModel.create({
       project_id,
-      user_id,
+      user_id: user_id || null,           // nullable
+      provider_id: provider_id || null,   // nullable
       message,
       parent_id: parent_id || null,
     });

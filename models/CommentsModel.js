@@ -1,18 +1,22 @@
 const pool = require("../db/pool");
 
 class CommentsModel {
-  // 🟩 Add comment (or reply)
-  static async create({ project_id, user_id, message, parent_id = null }) {
+  /* ======================================================
+     🟩 CREATE COMMENT OR REPLY
+     ====================================================== */
+  static async create({ project_id, user_id = null, provider_id = null, message, parent_id = null }) {
     const result = await pool.query(
-      `INSERT INTO comments (project_id, user_id, message, parent_id, created_at)
-       VALUES ($1, $2, $3, $4, NOW())
+      `INSERT INTO comments (project_id, user_id, provider_id, message, parent_id, created_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())
        RETURNING *`,
-      [project_id, user_id, message, parent_id]
+      [project_id, user_id, provider_id, message, parent_id]
     );
     return result.rows[0];
   }
 
-  // 🟩 Get main comments + replies
+  /* ======================================================
+     🟩 GET COMMENTS + NESTED REPLIES FOR A PROJECT
+     ====================================================== */
   static async getForProject(project_id) {
     const result = await pool.query(
       `SELECT * FROM comments
@@ -23,7 +27,7 @@ class CommentsModel {
 
     const rows = result.rows;
 
-    // Build nested comment structure
+    // Build nested structure
     const map = {};
     const rootComments = [];
 
@@ -45,7 +49,9 @@ class CommentsModel {
     return rootComments;
   }
 
-  // 🟩 Find comment by ID
+  /* ======================================================
+     🟩 FIND COMMENT BY ID
+     ====================================================== */
   static async findById(id) {
     const result = await pool.query(
       `SELECT * FROM comments WHERE id = $1`,
@@ -54,7 +60,9 @@ class CommentsModel {
     return result.rows[0];
   }
 
-  // 🟩 Delete single comment (auto-deletes replies via ON DELETE CASCADE)
+  /* ======================================================
+     🟩 DELETE COMMENT BY ID (CASCADE REMOVES REPLIES)
+     ====================================================== */
   static async deleteById(id) {
     const result = await pool.query(
       `DELETE FROM comments WHERE id = $1 RETURNING id`,
@@ -63,7 +71,9 @@ class CommentsModel {
     return result.rows[0];
   }
 
-  // 🟩 Delete all comments for a project
+  /* ======================================================
+     🟩 DELETE ALL COMMENTS FOR A PROJECT
+     ====================================================== */
   static async deleteForProject(project_id) {
     await pool.query(
       `DELETE FROM comments WHERE project_id = $1`,
