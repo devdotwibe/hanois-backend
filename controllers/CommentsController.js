@@ -1,4 +1,5 @@
 const CommentsModel = require("../models/CommentsModel");
+const LikesDislikesModel = require("../models/LikesDislikesModel");
 const { successResponse } = require("../utils/response");
 const { ValidationError, NotFoundError } = require("../utils/errors");
 
@@ -12,11 +13,10 @@ exports.createComment = async (req, res, next) => {
     if (!project_id) throw new ValidationError("project_id is required");
     if (!message) throw new ValidationError("message is required");
 
-    // ⭐ user_id and provider_id both allowed to be null
     const comment = await CommentsModel.create({
       project_id,
-      user_id: user_id || null,           // nullable
-      provider_id: provider_id || null,   // nullable
+      user_id: user_id || null,
+      provider_id: provider_id || null,
       message,
       parent_id: parent_id || null,
     });
@@ -41,11 +41,15 @@ exports.getCommentsByProject = async (req, res, next) => {
 
     if (!project_id) throw new ValidationError("project_id is required");
 
+    // Load comments
     const comments = await CommentsModel.getForProject(project_id);
+
+    // Add likes/dislikes count to each comment (recursive)
+    const enriched = await addReactionsToComments(comments);
 
     return successResponse(
       res,
-      { comments, count: comments.length },
+      { comments: enriched, count: enriched.length },
       "Comments retrieved successfully"
     );
   } catch (err) {
@@ -72,3 +76,30 @@ exports.deleteComment = async (req, res, next) => {
     next(err);
   }
 };
+
+/* ======================================================
+   🟦 HELPER — Attach Likes & Dislikes to Each Comment
+   ====================================================== */
+async function addReactionsToComments(comments) {
+  const updated = [];
+
+  for (const c of comments) {
+    // Get counts for this comment
+    const counts = await LikesDislikesModel.countReactions(c.id);
+
+    const enriched = {
+      ...c,
+      likes: Number(counts.likes) || 0,
+      dislikes: Number(counts.dislikes) || 0,
+    };
+
+    // If comment has replies, recursively add counts
+    if (c.replies && c.replies.length > 0) {
+      enriched.replies = await addReactionsToComments(c.replies);
+    }
+
+    updated.push(enriched);
+  }
+
+  return updated;
+}
