@@ -27,8 +27,8 @@ const serviceRoutes = require('./routes/serviceRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const projectImageRoutes = require('./routes/projectImageRoutes');
 
-const likesDislikesRoutes = require("./routes/likesDislikes");
-const commentsRoutes = require("./routes/commentsRoutes");
+// const likesDislikesRoutes = require("./routes/likesDislikes");
+// const commentsRoutes = require("./routes/commentsRoutes");
 
 
 
